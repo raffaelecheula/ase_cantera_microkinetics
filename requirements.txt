@@ -1,0 +1,5 @@
+numpy
+scipy
+ase
+cantera
+matplotlib
