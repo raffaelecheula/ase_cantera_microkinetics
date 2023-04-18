@@ -303,7 +303,11 @@ def get_surf_react_from_e_act(
     e_act,
     pre_exp,
     units_energy = units.eV/units.molecule,
+    allow_negative_e_act = False,
 ):
+
+    if e_act < 0. and allow_negative_e_act is False:
+        e_act = 0.
 
     if pre_exp == 'stick':
         rate = ct.StickingArrheniusRate(
