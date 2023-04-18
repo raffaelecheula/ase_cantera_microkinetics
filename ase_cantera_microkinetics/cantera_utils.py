@@ -71,8 +71,9 @@ def reactions_from_cat_ts(gas, cat, cat_ts, h0_dict = None, s0_dict = None):
         if isinstance(cat.reaction(ii).rate, ct.InterfaceArrheniusRate)
     ]:
 
+        reaction = cat.reaction(ii)
         name_ts = cat_ts.species_names[ii]
-        reactants = cat.reaction(ii).reactants
+        reactants = reaction.reactants
 
         reactants_gas = []
         reactants_ads = []
@@ -88,22 +89,22 @@ def reactions_from_cat_ts(gas, cat, cat_ts, h0_dict = None, s0_dict = None):
             h0_act -= h0_dict[name]*reactants[name]
             s0_act -= s0_dict[name]*reactants[name]
 
-        sticking = False # TODO: fix this.
-        if sticking is True:
-            gas_spec = reactants_gas[0]
-            mol_weight = gas[gas_spec].molecular_weights[0]
-            A_pre = np.sqrt(ct.gas_constant/(2*np.pi*mol_weight))
-            A_pre *= cat.site_density**(-len(reactants_ads))
-            b = 0.5
+        #if isinstance(reaction.rate, ct.StickingArrheniusRate):
+        #    #gas_spec = reactants_gas[0]
+        #    #mol_weight = gas[gas_spec].molecular_weights[0]
+        #    #A_pre = np.sqrt(ct.gas_constant/(2*np.pi*mol_weight))
+        #    #A_pre *= cat.site_density**(-len(reactants_ads))
+        #    #b_temp = 0.5
+        #    reaction.rate = ct.StickingArrheniusRate(Ea = h0_act)
 
         A_pre = units.kB/units.hP*np.exp(s0_act/units.Rgas)
         A_pre *= (units.Rgas*cat.T/cat.P)**(len(reactants_gas))
         A_pre *= cat.site_density**(1-len(reactants_ads))
+        b_temp = 1.0
         
-        reaction = cat.reaction(ii)
         reaction.rate = ct.InterfaceArrheniusRate(
             A  = A_pre,
-            b  = 1.0,
+            b  = b_temp,
             Ea = h0_act,
         )
 

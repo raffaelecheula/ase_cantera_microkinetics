@@ -69,6 +69,13 @@ class NameAnalyzer():
 
         return n_pieces_gas, n_pieces_ads
 
+    def get_reactants(self, name, index = 0):
+
+        name_new = self.get_names_without_mult_integers(name = name)[index]
+        reactants = name_new.split(' + ')
+
+        return reactants
+
     def get_composition_and_size(self, name, index = 0):
 
         name_new = self.get_names_without_mult_integers(name = name)[index]
@@ -111,7 +118,7 @@ def get_spec_ConstantCp(
     size = None,
     units_energy = units.eV/units.molecule,
     T_low = 200.00,
-    T_high = 3000.00,
+    T_high = 2000.00,
     P_ref = ct.one_atm,
 ):
     
@@ -197,7 +204,7 @@ def get_spec_NasaPoly2(
     units_energy = units.eV/units.molecule,
     T_low = 200.00,
     T_mid = 1000.00,
-    T_high = 3000.00,
+    T_high = 2000.00,
     P_ref = ct.one_atm,
 ):
     
@@ -214,8 +221,8 @@ def get_spec_NasaPoly2(
         coeffs = list(coeffs_NASA)
     
     if e_form is not None:
-        coeffs[13] += e_form*units_energy/ct.gas_constant-coeffs[6]
-        coeffs[6] = e_form*units_energy/ct.gas_constant
+        coeffs[6] += e_form*units_energy/ct.gas_constant
+        coeffs[13] += e_form*units_energy/ct.gas_constant
     
     spec.thermo = ct.NasaPoly2(
         T_low = T_low,
@@ -239,7 +246,7 @@ def get_species_from_coeffs_NASA_dict(
     size_dict = 'auto',
     T_low = 200.00,
     T_mid = 1000.00,
-    T_high = 3000.00,
+    T_high = 2000.00,
     P_ref = ct.one_atm,
 ):
 

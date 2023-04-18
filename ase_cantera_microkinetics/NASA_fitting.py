@@ -94,12 +94,12 @@ def fit_NASA_coeffs(T_array, H0_array, S0_array):
 # PRINT NASA COEFFS
 # -----------------------------------------------------------------------------
 
-def print_NASA_coeffs(coeffs, name = None, ljust = 71):
+def print_NASA_coeffs(coeffs, name = None, ljust = 71, fileobj = None):
     if name is not None:
-        print(f'"{name}"'.ljust(ljust), end = ' ')
+        print(f'"{name}"'.ljust(ljust), end = ' ', file = fileobj)
     for coeff in coeffs:
-        print(f'{coeff:+15.8E}', end = ' ')
-    print('')
+        print(f'{coeff:+15.8E}', end = ' ', file = fileobj)
+    print('', file = fileobj)
 
 # -----------------------------------------------------------------------------
 # PRINT NASA COEFFS
@@ -129,8 +129,15 @@ def plot_NASA_coeffs(T_array, H0_array, S0_array, coeffs):
 # -----------------------------------------------------------------------------
 
 def ase_thermo_to_NASA_coeffs(
-    thermo, n_points = 100, t_low = 200, t_max = 1000, coeffs_ref = None,
-    print_coeffs = False, plot_fit = False,
+    thermo,
+    n_points = 100,
+    t_low = 200,
+    t_max = 1000,
+    coeffs_ref = None,
+    print_coeffs = False,
+    name = None,
+    fileobj = None,
+    plot_fit = False,
 ):
     
     T_array = np.zeros(n_points)
@@ -167,7 +174,7 @@ def ase_thermo_to_NASA_coeffs(
     )
 
     if print_coeffs is True:
-        print_NASA_coeffs(coeffs)
+        print_NASA_coeffs(coeffs, name = name, fileobj = fileobj)
 
     if plot_fit is True:
         plot_NASA_coeffs(T_array, H0_array, S0_array, coeffs)
