@@ -35,6 +35,10 @@ class NameAnalyzer():
         else:
             names = [name]
     
+        for name in names:
+            if name[0] == ' ' or '  ' in name:
+                raise RuntimeError(f'Error in name: {name}.')
+    
         return names
 
     def get_names_without_mult_integers(self, name):
@@ -69,9 +73,16 @@ class NameAnalyzer():
 
         return n_pieces_gas, n_pieces_ads
 
-    def get_reactants(self, name, index = 0):
+    def get_reactants(self, name):
 
-        name_new = self.get_names_without_mult_integers(name = name)[index]
+        name_new = self.get_names_without_mult_integers(name = name)[0]
+        reactants = name_new.split(' + ')
+
+        return reactants
+
+    def get_products(self, name):
+    
+        name_new = self.get_names_without_mult_integers(name = name)[1]
         reactants = name_new.split(' + ')
 
         return reactants
