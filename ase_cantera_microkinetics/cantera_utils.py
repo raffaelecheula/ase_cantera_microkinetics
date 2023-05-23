@@ -10,7 +10,7 @@ from . import units
 # GET ENTHALPIES DICT
 # -----------------------------------------------------------------------------
 
-def get_enthalpies_dict(phase):
+def get_enthalpies_dict(phase, units_energy = units.J/units.kmol):
 
     h_dict = {}
     for ii in range(phase.n_species):
@@ -18,6 +18,7 @@ def get_enthalpies_dict(phase):
         h_dict[name] = (
             phase.standard_enthalpies_RT[ii]*ct.gas_constant*phase.T
         )
+        h_dict[name] /= units_energy
 
     return h_dict
 
@@ -25,7 +26,7 @@ def get_enthalpies_dict(phase):
 # GET STD ENTROPIES DICT
 # -----------------------------------------------------------------------------
 
-def get_std_entropies_dict(phase):
+def get_std_entropies_dict(phase, units_energy = units.J/units.kmol):
 
     s0_dict = {}
     for ii in range(phase.n_species):
@@ -33,6 +34,7 @@ def get_std_entropies_dict(phase):
         s0_dict[name] = (
             phase.standard_entropies_R[ii]*ct.gas_constant
         )
+        s0_dict[name] /= units_energy
 
     return s0_dict
 
@@ -40,7 +42,7 @@ def get_std_entropies_dict(phase):
 # GET STD GIBBS DICT
 # -----------------------------------------------------------------------------
 
-def get_std_gibbs_dict(phase):
+def get_std_gibbs_dict(phase, units_energy = units.J/units.kmol):
 
     g0_dict = {}
     for ii in range(phase.n_species):
@@ -48,6 +50,47 @@ def get_std_gibbs_dict(phase):
         g0_dict[name] = (
             phase.standard_gibbs_RT[ii]*ct.gas_constant*phase.T
         )
+        g0_dict[name] /= units_energy
+
+    return g0_dict
+
+# -----------------------------------------------------------------------------
+# GET ENTROPIES DICT
+# -----------------------------------------------------------------------------
+
+def get_entropies_dict(phase, units_energy = units.J/units.kmol):
+
+    s0_dict = {}
+    for ii in range(phase.n_species):
+        name = phase.species_names[ii]
+        if isinstance(phase, ct.Interface):
+            xi = phase[name].coverages[0]+1e-100
+        else:
+            xi = phase[name].X[0]+1e-100
+        s0_dict[name] = (
+            (phase.standard_entropies_R[ii]+np.log(xi))*ct.gas_constant
+        )
+        s0_dict[name] /= units_energy
+
+    return s0_dict
+
+# -----------------------------------------------------------------------------
+# GET GIBBS DICT
+# -----------------------------------------------------------------------------
+
+def get_gibbs_dict(phase, units_energy = units.J/units.kmol):
+
+    g0_dict = {}
+    for ii in range(phase.n_species):
+        name = phase.species_names[ii]
+        if isinstance(phase, ct.Interface):
+            xi = phase[name].coverages[0]+1e-100
+        else:
+            xi = phase[name].X[0]+1e-100
+        g0_dict[name] = (
+            (phase.standard_gibbs_RT[ii]+np.log(xi))*ct.gas_constant*phase.T
+        )
+        g0_dict[name] /= units_energy
 
     return g0_dict
 
@@ -628,16 +671,12 @@ def get_molfracs_from_eta_dict(
     from .reaction_mechanism import NameAnalyzer
     from scipy.optimize import root
 
-    TDY = gas.TDY
-    
     gas.TPX = gas.T, gas.P, molfracs_zero_dict
     gas.equilibrate('TP')
     
     molfracs_eq_dict = {}
     for spec in gas.species_names:
         molfracs_eq_dict[spec] = gas[spec].X[0]
-    
-    gas.TDY = TDY
     
     name_analyzer = NameAnalyzer()
     reactants_dict = {}
@@ -674,7 +713,31 @@ def get_molfracs_from_eta_dict(
         products_dict      = products_dict,
     )
 
+    gas.TPX = gas.T, gas.P, molfracs_dict
+
     return molfracs_dict
+
+# -----------------------------------------------------------------------------
+# GET DELTA G REACTION
+# -----------------------------------------------------------------------------
+
+def get_deltaG_reaction(
+    reaction_name,
+    gibbs_dict,
+):
+    
+    from .reaction_mechanism import NameAnalyzer
+    
+    name_analyzer = NameAnalyzer()
+    reactants = name_analyzer.get_reactants(reaction_name)
+    products = name_analyzer.get_products(reaction_name)
+    deltaG = 0.
+    for spec in reactants:
+        deltaG -= gibbs_dict[spec]
+    for spec in products:
+        deltaG += gibbs_dict[spec]
+
+    return deltaG
 
 # -----------------------------------------------------------------------------
 # END
