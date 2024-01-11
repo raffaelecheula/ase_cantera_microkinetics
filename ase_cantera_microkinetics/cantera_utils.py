@@ -64,11 +64,12 @@ def get_entropies_dict(phase, units_energy = units.J/units.kmol):
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
         if isinstance(phase, ct.Interface):
-            xi = phase[name].coverages[0]+1e-100
+            xi = phase[name].coverages[0]
         else:
-            xi = phase[name].X[0]+1e-100
+            xi = phase[name].X[0]
+        log_xi = np.log(xi) if xi > 0. else -np.inf
         s0_dict[name] = (
-            (phase.standard_entropies_R[ii]+np.log(xi))*ct.gas_constant
+            (phase.standard_entropies_R[ii]+log_xi)*ct.gas_constant
         )
         s0_dict[name] /= units_energy
 
@@ -84,11 +85,12 @@ def get_gibbs_dict(phase, units_energy = units.J/units.kmol):
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
         if isinstance(phase, ct.Interface):
-            xi = phase[name].coverages[0]+1e-100
+            xi = phase[name].coverages[0]
         else:
-            xi = phase[name].X[0]+1e-100
+            xi = phase[name].X[0]
+        log_xi = np.log(xi) if xi > 0. else -np.inf
         g0_dict[name] = (
-            (phase.standard_gibbs_RT[ii]+np.log(xi))*ct.gas_constant*phase.T
+            (phase.standard_gibbs_RT[ii]+log_xi)*ct.gas_constant*phase.T
         )
         g0_dict[name] /= units_energy
 
@@ -148,8 +150,8 @@ def reactions_from_cat_ts(gas, cat, cat_ts, h0_dict = None, s0_dict = None):
         b_temp = 1.0
         
         reaction.rate = ct.InterfaceArrheniusRate(
-            A  = A_pre,
-            b  = b_temp,
+            A = A_pre,
+            b = b_temp,
             Ea = h0_act,
         )
 
@@ -201,9 +203,9 @@ def modify_enthalpy(
         elif delta_e is not None:
             coeffs[1] += delta_e*units_energy
         spec.thermo = ct.ConstantCp(
-            T_low  = spec.thermo.min_temp,
+            T_low = spec.thermo.min_temp,
             T_high = spec.thermo.max_temp,
-            P_ref  = spec.thermo.reference_pressure,
+            P_ref = spec.thermo.reference_pressure,
             coeffs = coeffs,
         )
     
@@ -215,9 +217,9 @@ def modify_enthalpy(
             coeffs[13] += delta_e*units_energy/ct.gas_constant
             coeffs[6] += delta_e*units_energy/ct.gas_constant
         spec.thermo = ct.NasaPoly2(
-            T_low  = spec.thermo.min_temp,
+            T_low = spec.thermo.min_temp,
             T_high = spec.thermo.max_temp,
-            P_ref  = spec.thermo.reference_pressure,
+            P_ref = spec.thermo.reference_pressure,
             coeffs = coeffs,
         )
 
@@ -275,25 +277,25 @@ def degree_rate_control(
     index_gas_spec = gas.species_names.index(gas_spec_target)
 
     dni_dot_orig = get_delta_molar_fluxes(
-        gas      = gas,
-        sim      = sim,
-        TDY      = TDY,
-        mdot     = mdot,
+        gas = gas,
+        sim = sim,
+        TDY = TDY,
+        mdot = mdot,
         upstream = upstream,
     )
 
     dni_dot_orig = get_delta_molar_fluxes(
-        gas      = gas,
-        sim      = sim,
-        TDY      = TDY,
-        mdot     = mdot,
+        gas = gas,
+        sim = sim,
+        TDY = TDY,
+        mdot = mdot,
         upstream = upstream,
     )
     dni_dot_orig = get_delta_molar_fluxes(
-        gas      = gas,
-        sim      = sim,
-        TDY      = TDY,
-        mdot     = mdot,
+        gas = gas,
+        sim = sim,
+        TDY = TDY,
+        mdot = mdot,
         upstream = upstream,
     )
 
@@ -302,10 +304,10 @@ def degree_rate_control(
     for ii in range(cat.n_reactions):
         cat.set_multiplier(value = multip_value, i_reaction = ii)
         dni_dot_mod = get_delta_molar_fluxes(
-            gas      = gas,
-            sim      = sim,
-            TDY      = TDY,
-            mdot     = mdot,
+            gas = gas,
+            sim = sim,
+            TDY = TDY,
+            mdot = mdot,
             upstream = upstream,
         )
         cat.set_multiplier(value = 1.0, i_reaction = ii)
@@ -341,16 +343,16 @@ def generalized_degree_rate_control(
     TDY = gas.TDY
     index_gas_spec = gas.species_names.index(gas_spec_target)
     reactions_from_cat_ts(
-        gas    = gas,
-        cat    = cat,
+        gas = gas,
+        cat = cat,
         cat_ts = cat_ts,
     )
 
     dni_dot_orig = get_delta_molar_fluxes(
-        gas      = gas,
-        sim      = sim,
-        TDY      = TDY,
-        mdot     = mdot,
+        gas = gas,
+        sim = sim,
+        TDY = TDY,
+        mdot = mdot,
         upstream = upstream,
     )
 
@@ -360,34 +362,34 @@ def generalized_degree_rate_control(
         spec = cat_ts.species(ii)
         coeffs_zero = spec.thermo.coeffs.copy()
         spec = modify_enthalpy(
-            spec         = spec,
-            coeffs_zero  = coeffs_zero,
-            delta_e      = delta_e,
+            spec = spec,
+            coeffs_zero = coeffs_zero,
+            delta_e = delta_e,
             units_energy = units_energy,
         )
         cat_ts.modify_species(ii, spec)
         reactions_from_cat_ts(
-            gas    = gas,
-            cat    = cat,
+            gas = gas,
+            cat = cat,
             cat_ts = cat_ts,
         )
         dni_dot_mod = get_delta_molar_fluxes(
-            gas      = gas,
-            sim      = sim,
-            TDY      = TDY,
-            mdot     = mdot,
+            gas = gas,
+            sim = sim,
+            TDY = TDY,
+            mdot = mdot,
             upstream = upstream,
         )
         spec = modify_enthalpy(
-            spec         = spec,
-            coeffs_zero  = coeffs_zero,
-            delta_e      = 0.,
+            spec = spec,
+            coeffs_zero = coeffs_zero,
+            delta_e = 0.,
             units_energy = units_energy,
         )
         cat_ts.modify_species(ii, spec)
         reactions_from_cat_ts(
-            gas    = gas,
-            cat    = cat,
+            gas = gas,
+            cat = cat,
             cat_ts = cat_ts,
         )
         DRC_species = (
@@ -401,34 +403,34 @@ def generalized_degree_rate_control(
         spec = cat.species(ii)
         coeffs_zero = spec.thermo.coeffs.copy()
         spec = modify_enthalpy(
-            spec         = spec,
-            coeffs_zero  = coeffs_zero,
-            delta_e      = -delta_e,
+            spec = spec,
+            coeffs_zero = coeffs_zero,
+            delta_e = -delta_e,
             units_energy = units_energy,
         )
         cat.modify_species(ii, spec)
         reactions_from_cat_ts(
-            gas    = gas,
-            cat    = cat,
+            gas = gas,
+            cat = cat,
             cat_ts = cat_ts,
         )
         dni_dot_mod = get_delta_molar_fluxes(
-            gas      = gas,
-            sim      = sim,
-            TDY      = TDY,
-            mdot     = mdot,
+            gas = gas,
+            sim = sim,
+            TDY = TDY,
+            mdot = mdot,
             upstream = upstream,
         )
         spec = modify_enthalpy(
-            spec         = spec,
-            coeffs_zero  = coeffs_zero,
-            delta_e      = 0.,
+            spec = spec,
+            coeffs_zero = coeffs_zero,
+            delta_e  = 0.,
             units_energy = units_energy,
         )
         cat.modify_species(ii, spec)
         reactions_from_cat_ts(
-            gas    = gas,
-            cat    = cat,
+            gas = gas,
+            cat = cat,
             cat_ts = cat_ts,
         )
         DRC_species = (
@@ -630,9 +632,9 @@ def error_eta_dict(
     
     molfracs_dict = get_molfracs_from_lambda(
         molfracs_zero_dict = molfracs_zero_dict,
-        lambda_list        = x,
-        reactants_dict     = reactants_dict,
-        products_dict      = products_dict,
+        lambda_list = x,
+        reactants_dict = reactants_dict,
+        products_dict = products_dict,
     )
 
     error = []
@@ -640,10 +642,10 @@ def error_eta_dict(
         reactants = reactants_dict[react_name]
         products = products_dict[react_name]
         eta_react = get_nonequilirium_ratio(
-            molfracs_dict    = molfracs_dict,
+            molfracs_dict = molfracs_dict,
             molfracs_eq_dict = molfracs_eq_dict,
-            reactants        = reactants,
-            products         = products,
+            reactants = reactants,
+            products = products,
         )
         error.append(eta_react-eta_dict[react_name])
 
@@ -689,11 +691,11 @@ def get_molfracs_from_eta_dict(
         x0 = [0.01]*len(eta_dict)
     
     results = root(
-        fun     = error_eta_dict,
-        x0      = x0,
-        method  = method,
+        fun = error_eta_dict,
+        x0 = x0,
+        method = method,
         options = options,
-        args    = (
+        args = (
             eta_dict,
             molfracs_zero_dict,
             molfracs_eq_dict,
@@ -708,9 +710,9 @@ def get_molfracs_from_eta_dict(
     
     molfracs_dict = get_molfracs_from_lambda(
         molfracs_zero_dict = molfracs_zero_dict,
-        lambda_list        = lambda_list,
-        reactants_dict     = reactants_dict,
-        products_dict      = products_dict,
+        lambda_list = lambda_list,
+        reactants_dict = reactants_dict,
+        products_dict = products_dict,
     )
 
     gas.TPX = gas.T, gas.P, molfracs_dict

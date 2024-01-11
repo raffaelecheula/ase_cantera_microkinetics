@@ -62,11 +62,11 @@ molecule   = 1./ase.units.mol*mole
 # CONSTANTS
 # -----------------------------------------------------------------------------
 
-k_Boltzmann = kB   = ase.units.kB*eV   # [J/K]
-h_Planck    = hP   = 6.62607e-34*J*sec # [J*sec]
-N_Avogadro  = Navo = 1./molecule       # [1/kmol]
-R_ideal_gas = Rgas = kB*Navo           # [J/kmol/K]
-c_light     = c_l  = ase.units._c      # [m/s]
+k_Boltzmann = kB   = ase.units.kB*eV       # [J/K]
+h_Planck    = hP   = 6.62607e-34*Joule*sec # [J*sec]
+N_Avogadro  = Navo = 1./molecule           # [1/kmol]
+R_ideal_gas = Rgas = kB*Navo               # [J/kmol/K]
+c_light     = c_l  = ase.units._c          # [m/s]
 
 # -----------------------------------------------------------------------------
 # CONSTRUCTED UNITS
@@ -103,17 +103,17 @@ megaJoule  = mega*Joule
 # CELSIUS TO KELVIN
 # -----------------------------------------------------------------------------
 
-def Celsius_to_Kelvin(t):
+def Celsius_to_Kelvin(temperature):
 
-    return t+273.15 # [K]
+    return temperature+273.15 # [K]
 
 # -----------------------------------------------------------------------------
 # KELVIN TO CELSIUS
 # -----------------------------------------------------------------------------
 
-def Kelvin_to_Celsius(t):
+def Kelvin_to_Celsius(temperature):
 
-    return t-273.15 # [C]
+    return temperature-273.15 # [C]
 
 # -----------------------------------------------------------------------------
 # NORMAL LITER

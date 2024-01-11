@@ -17,10 +17,8 @@ def read_vib_energies(filename = 'vib.log', imaginary = False):
         lines = fileobj.readlines()
 
     for i in range(3, len(lines)):
-        
         if lines[i][0] == '-':
             break
-        
         string = lines[i].split()[1]
         if string[-1] == 'i':
             if imaginary is True:
@@ -83,7 +81,7 @@ def fit_NASA_coeffs(T_array, H0_array, S0_array):
 
     opt = least_squares(
         fun  = NASA_coeffs_residuals_fun,
-        x0   = np.ones(7),
+        x0 = np.ones(7),
         args = (T_array, H0_array, S0_array)
     )
     coeffs = opt.x
@@ -148,19 +146,19 @@ def ase_thermo_to_NASA_coeffs(
         if hasattr(thermo, 'get_enthalpy'):
             H0 = thermo.get_enthalpy(
                 temperature = T_array[ii],
-                verbose     = False,
+                verbose = False,
             )
         if hasattr(thermo, 'get_internal_energy'):
             H0 = thermo.get_internal_energy(
                 temperature = T_array[ii],
-                verbose     = False,
+                verbose = False,
             )
         else:
             raise RuntimeError('thermo class cannot calculate H0.')
         H0_array[ii] = H0 * units.eV/units.molecule/units.Rgas
         S0 = thermo.get_entropy(
             temperature = T_array[ii],
-            verbose     = False,
+            verbose = False,
         )
         S0_array[ii] = S0 * units.eV/units.molecule/units.Rgas
         if coeffs_ref is not None:
@@ -168,7 +166,7 @@ def ase_thermo_to_NASA_coeffs(
             S0_array[ii] -= S0_from_NASA(T_array[ii], coeffs_ref)
 
     coeffs = fit_NASA_coeffs(
-        T_array  = T_array,
+        T_array = T_array,
         H0_array = H0_array,
         S0_array = S0_array,
     )

@@ -16,27 +16,25 @@ class NameAnalyzer():
 
     def __init__(
         self,
-        site_separators = '(,)',
-        text_separator = '_',
+        site_separators = "(,)",
+        react_separator = "<=>",
+        text_separator = "_",
     ):
         
         self.site_separators = site_separators
+        self.react_separator = react_separator
         self.text_separator = text_separator
 
     def get_names_reactants_products(self, name):
 
         # Split equation into names of reactants and products.
-        if ' <=> ' in name:
-            names = name.split(' <=> ')
-        elif ' => ' in name:
-            names = name.split(' => ')
-        elif ' = ' in name:
-            names = name.split(' = ')
+        if self.react_separator in name:
+            names = name.split(f" {self.react_separator} ")
         else:
             names = [name]
     
         for name in names:
-            if name[0] == ' ' or '  ' in name:
+            if name[0] == " " or name[-1] == " " or "  " in name:
                 raise RuntimeError(f'Error in name: {name}.')
     
         return names
@@ -46,22 +44,22 @@ class NameAnalyzer():
         # Convert multiplying integers into the corresponding pieces.
         names_new = []
         for name in self.get_names_reactants_products(name):
-            pieces = name.split(' + ')
+            pieces = name.split(" + ")
             pieces_new = []
             for piece in pieces:
-                if ' ' in piece:
-                    mm, pp = piece.split(' ')
+                if " " in piece:
+                    mm, pp = piece.split(" ")
                     pieces_new += [pp]*int(mm)
                 else:
                     pieces_new += [piece]
-            names_new.append(' + '.join(pieces_new))
+            names_new.append(" + ".join(pieces_new))
 
         return names_new
 
     def get_n_pieces_gas_ads(self, name, index = 0):
 
         name_new = self.get_names_without_mult_integers(name = name)[index]
-        pieces = name_new.split(' + ')
+        pieces = name_new.split(" + ")
 
         n_pieces_gas = 0
         n_pieces_ads = 0
@@ -76,14 +74,14 @@ class NameAnalyzer():
     def get_reactants(self, name):
 
         name_new = self.get_names_without_mult_integers(name = name)[0]
-        reactants = name_new.split(' + ')
+        reactants = name_new.split(" + ")
 
         return reactants
 
     def get_products(self, name):
     
         name_new = self.get_names_without_mult_integers(name = name)[1]
-        reactants = name_new.split(' + ')
+        reactants = name_new.split(" + ")
 
         return reactants
 
@@ -94,17 +92,17 @@ class NameAnalyzer():
         # Get size and composition.
         size = 0
         composition = {}
-        name_new = name_new.replace(' ', '')
-        spec_list = name_new.split('+')
+        name_new = name_new.replace(" ", "")
+        spec_list = name_new.split("+")
         for spec in spec_list:
             if self.site_separators[0] in spec:
                 spec, site = spec.split(self.site_separators[0])
                 site = site.split(self.site_separators[2])[0]
                 site_list = site.split(self.site_separators[1])
-                site_str = ''.join(site_list)
+                site_str = "".join(site_list)
                 size += len(site_list)
             else:
-                site_str = ''
+                site_str = ""
             spec = spec.split(self.text_separator)[0]
             comp_spec = Formula(site_str+spec, strict=True).count()
             for elem in comp_spec:
@@ -168,6 +166,12 @@ def get_species_from_g0_dict_fixed_T(
 
     species = []
     for name in g0_dict:
+
+        if (
+            not isinstance(g0_dict[name], (np.floating, float)) or 
+            np.isnan(g0_dict[name])
+        ):
+            continue
 
         if name_analyzer is not None:
             composition_auto, size_auto = (
@@ -377,6 +381,12 @@ def get_surf_reactions_from_g0_act_dict_fixed_T(
 
     surf_reactions = []
     for name in g0_act_dict:
+
+        if (
+            not isinstance(g0_act_dict[name], (np.floating, float)) or 
+            np.isnan(g0_act_dict[name])
+        ):
+            continue
 
         if name_analyzer is not None:
             n_pieces_gas, n_pieces_ads = name_analyzer.get_n_pieces_gas_ads(
