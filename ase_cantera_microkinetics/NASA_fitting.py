@@ -94,9 +94,9 @@ def fit_NASA_coeffs(T_array, H0_array, S0_array):
 
 def print_NASA_coeffs(coeffs, name = None, ljust = 71, fileobj = None):
     if name is not None:
-        print(f'"{name}"'.ljust(ljust), end = ' ', file = fileobj)
+        print(f'"{name}"'.ljust(ljust), end = ', ', file = fileobj)
     for coeff in coeffs:
-        print(f'{coeff:+15.8E}', end = ' ', file = fileobj)
+        print(f'{coeff:+15.8E}', end = ', ', file = fileobj)
     print('', file = fileobj)
 
 # -----------------------------------------------------------------------------
@@ -132,6 +132,7 @@ def ase_thermo_to_NASA_coeffs(
     t_low = 200,
     t_max = 1000,
     coeffs_ref = None,
+    subtract_ZPE = True,
     print_coeffs = False,
     name = None,
     fileobj = None,
@@ -141,6 +142,12 @@ def ase_thermo_to_NASA_coeffs(
     T_array = np.zeros(n_points)
     H0_array = np.zeros(n_points)
     S0_array = np.zeros(n_points)
+    
+    if hasattr(thermo, 'get_zero_point_energy'):
+        ZPE = thermo.get_zero_point_energy(verbose = False)
+    else:
+        ZPE = thermo.get_ZPE_correction()
+    
     for ii in range(n_points):
         T_array[ii] = t_low+ii*(t_max-t_low)/n_points
         if hasattr(thermo, 'get_enthalpy'):
@@ -155,7 +162,10 @@ def ase_thermo_to_NASA_coeffs(
             )
         else:
             raise RuntimeError('thermo class cannot calculate H0.')
-        H0_array[ii] = H0 * units.eV/units.molecule/units.Rgas
+        if subtract_ZPE is True:
+            H0_array[ii] = (H0-ZPE) * units.eV/units.molecule/units.Rgas
+        else:
+            H0_array[ii] = H0 * units.eV/units.molecule/units.Rgas
         S0 = thermo.get_entropy(
             temperature = T_array[ii],
             verbose = False,

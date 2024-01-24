@@ -29,10 +29,15 @@ def get_enthalpies_dict(phase, units_energy = units.J/units.kmol):
 def get_std_entropies_dict(phase, units_energy = units.J/units.kmol):
 
     s0_dict = {}
+    # standard_entropies_R are calculated at phase.P, not at reference P.
+    if isinstance(phase, ct.Interface):
+        log_P = 0.
+    else:
+        log_P = np.log(phase.P/ct.one_atm)
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
         s0_dict[name] = (
-            phase.standard_entropies_R[ii]*ct.gas_constant
+            (phase.standard_entropies_R[ii]+log_P)*ct.gas_constant
         )
         s0_dict[name] /= units_energy
 
@@ -45,10 +50,15 @@ def get_std_entropies_dict(phase, units_energy = units.J/units.kmol):
 def get_std_gibbs_dict(phase, units_energy = units.J/units.kmol):
 
     g0_dict = {}
+    # standard_gibbs_RT are calculated at phase.P, not at reference P.
+    if isinstance(phase, ct.Interface):
+        log_P = 0.
+    else:
+        log_P = np.log(phase.P/ct.one_atm)
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
         g0_dict[name] = (
-            phase.standard_gibbs_RT[ii]*ct.gas_constant*phase.T
+            (phase.standard_gibbs_RT[ii]-log_P)*ct.gas_constant*phase.T
         )
         g0_dict[name] /= units_energy
 
@@ -111,30 +121,41 @@ def reactions_from_cat_ts(gas, cat, cat_ts, h0_dict = None, s0_dict = None):
         s0_dict.update(get_std_entropies_dict(cat))
         s0_dict.update(get_std_entropies_dict(cat_ts))
 
-    for ii in [
-        ii for ii in range(cat.n_reactions)
-        if isinstance(cat.reaction(ii).rate, ct.InterfaceArrheniusRate)
-    ]:
+    for ii in [ii for ii in range(cat.n_reactions)]:
 
         reaction = cat.reaction(ii)
         name_ts = cat_ts.species_names[ii]
-        reactants = reaction.reactants
 
         reactants_gas = []
         reactants_ads = []
-        for name in reactants:
+        for name in reaction.reactants:
             if name in gas.species_names:
-                reactants_gas += [name]*int(reactants[name])
+                reactants_gas += [name]*int(reaction.reactants[name])
             elif name in cat.species_names:
-                reactants_ads += [name]*int(reactants[name])
+                reactants_ads += [name]*int(reaction.reactants[name])
 
         h0_act = h0_dict[name_ts]
         s0_act = s0_dict[name_ts]
-        for name in reactants:
-            h0_act -= h0_dict[name]*reactants[name]
-            s0_act -= s0_dict[name]*reactants[name]
+        for name in reaction.reactants:
+            h0_act -= h0_dict[name]*reaction.reactants[name]
+            s0_act -= s0_dict[name]*reaction.reactants[name]
 
-        #if isinstance(reaction.rate, ct.StickingArrheniusRate):
+        if isinstance(cat.reaction(ii).rate, ct.InterfaceArrheniusRate):
+
+            A_pre = units.kB/units.hP*np.exp(s0_act/units.Rgas)
+            A_pre *= (units.Rgas*cat.T/cat.P)**(len(reactants_gas))
+            #A_pre *= (units.Rgas*cat.T/ct.one_atm)**(len(reactants_gas)) # TODO: check
+            A_pre *= cat.site_density**(1-len(reactants_ads))
+            b_temp = 1.0
+
+            reaction.rate = ct.InterfaceArrheniusRate(
+                A = A_pre,
+                b = b_temp,
+                Ea = h0_act,
+            )
+
+        #elif isinstance(cat.reaction(ii).rate, ct.StickingArrheniusRate):
+        #
         #    gas_spec = reactants_gas[0]
         #    mol_weight = gas[gas_spec].molecular_weights[0]
         #    A_pre = np.sqrt(units.Rgas/(2*np.pi*mol_weight))
@@ -142,18 +163,8 @@ def reactions_from_cat_ts(gas, cat, cat_ts, h0_dict = None, s0_dict = None):
         #    b_temp = 0.5
         #    k_for = A_pre*cat.T**b_temp
         #    s0_act = -units.Rgas*np.log(k_for/(units.kB*cat.T/units.hP))
+        #    
         #    reaction.rate = ct.StickingArrheniusRate(Ea = h0_act)
-
-        A_pre = units.kB/units.hP*np.exp(s0_act/units.Rgas)
-        A_pre *= (units.Rgas*cat.T/cat.P)**(len(reactants_gas))
-        A_pre *= cat.site_density**(1-len(reactants_ads))
-        b_temp = 1.0
-        
-        reaction.rate = ct.InterfaceArrheniusRate(
-            A = A_pre,
-            b = b_temp,
-            Ea = h0_act,
-        )
 
         cat.modify_reaction(ii, reaction)
 
