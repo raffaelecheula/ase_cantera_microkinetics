@@ -318,7 +318,7 @@ def get_surf_react_from_e_act(
     e_act,
     pre_exp,
     units_energy = units.eV/units.molecule,
-    allow_negative_e_act = False,
+    allow_negative_e_act = True,
 ):
 
     if e_act < 0. and allow_negative_e_act is False:
@@ -426,7 +426,7 @@ def get_surf_reactions_from_g0_act_dict_fixed_T(
 # COEFF NASA DICT FROM DATAFRAME
 # -----------------------------------------------------------------------------
 
-def coeff_NASA_dict_from_dataframe(
+def coeffs_NASA_dict_from_dataframe(
     dataframe,
     names = 'all',
     species_key = 'species',
@@ -450,7 +450,7 @@ def coeff_NASA_dict_from_dataframe(
     
 def change_reference_energies(
     species,
-    energy_ref_dict,
+    energy_ref_funs,
     name_analyzer = None,
     composition_dict = None,
     units_energy = units.eV/units.molecule,
@@ -467,8 +467,8 @@ def change_reference_energies(
         else:
             raise NotImplementedError("thermo class not implemented.")
 
-    for name in energy_ref_dict:
-        energy[name] = energy_ref_dict[name](energy = energy)
+    for name in energy_ref_funs:
+        energy[name] = energy_ref_funs[name](energy = energy)
     
     for spec in species:
         if composition_dict is None:
