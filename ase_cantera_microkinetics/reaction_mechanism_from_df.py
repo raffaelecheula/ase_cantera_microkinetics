@@ -2,6 +2,7 @@
 # IMPORTS
 # -----------------------------------------------------------------------------
 
+import numpy as np
 import pandas as pd
 import cantera as ct
 from ase_cantera_microkinetics import units
@@ -9,7 +10,6 @@ from ase_cantera_microkinetics.cantera_utils import get_std_gibbs_dict
 from ase_cantera_microkinetics.reaction_mechanism import (
     NameAnalyzer,
     get_species_from_coeffs_NASA_dict,
-    coeffs_NASA_dict_from_dataframe,
     change_reference_energies,
     get_species_from_g0_dict_fixed_T,
     get_surf_reactions_from_g0_act_dict_fixed_T,
@@ -27,10 +27,10 @@ def get_gas_species_from_df_fixed_T(
     sheet_g0_gas = 'g0_gas',
     name_analyzer = NameAnalyzer(),
     units_energy = units.eV/units.molecule,
+    change_reference = True,
 ):
 
-    df = pd.read_excel(filename, index_col = 0, sheet_name = sheet_g0_gas)
-
+    df = pd.read_excel(filename, sheet_name = sheet_g0_gas, index_col = 0)
     df_dict = df.to_dict()
     g0_dict = df_dict[structure]
 
@@ -38,16 +38,15 @@ def get_gas_species_from_df_fixed_T(
         g0_dict = g0_dict,
         temperature_fixed = temperature_fixed,
         name_analyzer = name_analyzer,
-        composition_dict = 'auto',
-        size_dict = 'auto',
         units_energy = units_energy,
     )
 
-    gas_species = change_reference_energies(
-        species = gas_species,
-        energy_ref_funs = energy_ref_funs,
-        name_analyzer = name_analyzer,
-    )
+    if change_reference is True:
+        gas_species = change_reference_energies(
+            species = gas_species,
+            energy_ref_funs = energy_ref_funs,
+            name_analyzer = name_analyzer,
+        )
 
     return gas_species
 
@@ -64,8 +63,7 @@ def get_ads_species_from_df_fixed_T(
     units_energy = units.eV/units.molecule,
 ):
 
-    df = pd.read_excel(filename, index_col = 0, sheet_name = sheet_g0_ads)
-
+    df = pd.read_excel(filename, sheet_name = sheet_g0_ads, index_col = 0)
     df_dict = df.to_dict()
     g0_dict = df_dict[structure]
 
@@ -73,8 +71,6 @@ def get_ads_species_from_df_fixed_T(
         g0_dict = g0_dict,
         temperature_fixed = temperature_fixed,
         name_analyzer = name_analyzer,
-        composition_dict = 'auto',
-        size_dict = 'auto',
         units_energy = units_energy,
     )
 
@@ -92,20 +88,35 @@ def get_ts_species_from_df_fixed_T(
     units_energy = units.eV/units.molecule,
 ):
 
-    df = pd.read_excel(filename, index_col = 0, sheet_name = sheet_g0_ts)
-
+    df = pd.read_excel(filename, sheet_name = sheet_g0_ts, index_col = 0)
     df_dict = df.to_dict()
     g0_dict = df_dict[structure]
 
     ts_species = get_species_from_g0_dict_fixed_T(
         g0_dict = g0_dict,
         temperature_fixed = temperature_fixed,
-        composition_dict = None,
-        size_dict = None,
+        name_analyzer = None,
         units_energy = units_energy,
     )
 
     return ts_species
+
+# -----------------------------------------------------------------------------
+# GET STICKING REACTIONS
+# -----------------------------------------------------------------------------
+
+def get_sticking_reactions(e_act_dict):
+    
+    sticking_reactions = []
+    for name in e_act_dict:
+        if isinstance(e_act_dict[name], str) and 'sticking' in e_act_dict[name]:
+            sticking_reactions.append(name)
+            if 'e_act=' in e_act_dict[name]:
+                e_act_dict[name] = float(e_act_dict[name].split('e_act=')[1])
+            else:
+                e_act_dict[name] = 0.
+
+    return sticking_reactions
 
 # -----------------------------------------------------------------------------
 # GET SURF REACTIONS FROM DF FIXED T
@@ -123,17 +134,11 @@ def get_surf_reactions_from_df_fixed_T(
     units_energy = units.eV/units.molecule,
 ):
 
-    df = pd.read_excel(filename, index_col = 0, sheet_name = sheet_g0_ts)
-
+    df = pd.read_excel(filename, sheet_name = sheet_g0_ts, index_col = 0)
     df_dict = df.to_dict()
     g0_ts_dict = df_dict[structure]
 
-    sticking_reactions = [
-        name for name in df_dict['sticking'] if df_dict['sticking'][name]
-    ]
-
-    df = pd.read_excel(filename, index_col = 0, sheet_name = sheet_g0_ads)
-
+    df = pd.read_excel(filename, sheet_name = sheet_g0_ads, index_col = 0)
     df_dict = df.to_dict()
     g0_ads_gas_dict = df_dict[structure]
 
@@ -145,15 +150,17 @@ def get_surf_reactions_from_df_fixed_T(
     g0_act_dict = {}
     for name in g0_ts_dict:
         g0_act_dict[name] = g0_ts_dict[name]
-        for reactant in name_analyzer.get_reactants(name = name):
-            g0_act_dict[name] -= g0_ads_gas_dict[reactant]
+        if isinstance(g0_ts_dict[name], (int, float, np.integer, np.floating)):
+            for reactant in name_analyzer.get_reactants(name = name):
+                g0_act_dict[name] -= g0_ads_gas_dict[reactant]
 
+    sticking_reactions = get_sticking_reactions(g0_act_dict)
+    
     surf_reactions = get_surf_reactions_from_g0_act_dict_fixed_T(
         gas = gas,
         g0_act_dict = g0_act_dict,
         temperature_fixed = temperature_fixed,
         name_analyzer = name_analyzer,
-        pre_exp_dict = 'auto',
         site_density = site_density,
         sticking_reactions = sticking_reactions,
         units_energy = units_energy,
@@ -170,35 +177,31 @@ def get_gas_species_from_df_coeffs_NASA(
     energy_ref_funs,
     names = 'all',
     sheet_coeffs = 'coeffs_gas',
-    species_key = 'species',
-    coeff_key = 'NASA',
     name_analyzer = NameAnalyzer(),
     units_energy = units.eV/units.molecule,
+    change_reference = True,
 ):
 
-    df_coeffs = pd.read_excel(filename, sheet_name = sheet_coeffs)
-
-    coeffs_NASA_dict = coeffs_NASA_dict_from_dataframe(
-        dataframe = df_coeffs,
-        names = names,
-        species_key = species_key,
-        coeff_key = coeff_key,
-    )
-
+    df = pd.read_excel(filename, sheet_name = sheet_coeffs, index_col = 0)
+    df_dict = df.to_dict(orient = 'index')
+    coeffs_NASA_dict = {
+        name: list(df_dict[name].values()) 
+        for name in df_dict if names == 'all' or name in names
+    }
+    
     gas_species = get_species_from_coeffs_NASA_dict(
         coeffs_NASA_dict = coeffs_NASA_dict,
         e_form_dict = None,
         units_energy = units_energy,
         name_analyzer = name_analyzer,
-        composition_dict = 'auto',
-        size_dict = 'auto',
     )
 
-    gas_species = change_reference_energies(
-        species = gas_species,
-        energy_ref_funs = energy_ref_funs,
-        name_analyzer = name_analyzer,
-    )
+    if change_reference is True:
+        gas_species = change_reference_energies(
+            species = gas_species,
+            energy_ref_funs = energy_ref_funs,
+            name_analyzer = name_analyzer,
+        )
 
     return gas_species
 
@@ -212,23 +215,18 @@ def get_ads_species_from_df_coeffs_NASA(
     sheet_coeffs = 'coeffs_ads',
     sheet_e_ads = 'e_ads',
     names = 'all',
-    species_key = 'species',
-    coeff_key = 'NASA',
     name_analyzer = NameAnalyzer(),
     units_energy = units.eV/units.molecule,
 ):
 
-    df_coeffs = pd.read_excel(filename, sheet_name = sheet_coeffs)
+    df = pd.read_excel(filename, sheet_name = sheet_coeffs, index_col = 0)
+    df_dict = df.to_dict(orient = 'index')
+    coeffs_NASA_dict = {
+        name: list(df_dict[name].values()) 
+        for name in df_dict if names == 'all' or name in names
+    }
 
-    coeffs_NASA_dict = coeffs_NASA_dict_from_dataframe(
-        dataframe = df_coeffs,
-        names = names,
-        species_key = species_key,
-        coeff_key = coeff_key,
-    )
-
-    df = pd.read_excel(filename, index_col = 0, sheet_name = sheet_e_ads)
-
+    df = pd.read_excel(filename, sheet_name = sheet_e_ads, index_col = 0)
     df_dict = df.to_dict()
     e_ads_dict = df_dict[structure]
     
@@ -237,8 +235,6 @@ def get_ads_species_from_df_coeffs_NASA(
         e_form_dict = e_ads_dict,
         units_energy = units_energy,
         name_analyzer = name_analyzer,
-        composition_dict = 'auto',
-        size_dict = 'auto',
     )
 
     return ads_species
@@ -253,22 +249,17 @@ def get_ts_species_from_df_coeffs_NASA(
     sheet_coeffs = 'coeffs_ts',
     sheet_e_ts = 'e_ts',
     names = 'all',
-    species_key = 'species',
-    coeff_key = 'NASA',
     units_energy = units.eV/units.molecule,
 ):
 
-    df_coeffs = pd.read_excel(filename, sheet_name = sheet_coeffs)
+    df = pd.read_excel(filename, sheet_name = sheet_coeffs, index_col = 0)
+    df_dict = df.to_dict(orient = 'index')
+    coeffs_NASA_dict = {
+        name: list(df_dict[name].values()) 
+        for name in df_dict if names == 'all' or name in names
+    }
 
-    coeffs_NASA_dict = coeffs_NASA_dict_from_dataframe(
-        dataframe = df_coeffs,
-        names = names,
-        species_key = species_key,
-        coeff_key = coeff_key,
-    )
-
-    df = pd.read_excel(filename, index_col = 0, sheet_name = sheet_e_ts)
-
+    df = pd.read_excel(filename, sheet_name = sheet_e_ts, index_col = 0)
     df_dict = df.to_dict()
     e_ts_dict = df_dict[structure]
 
@@ -276,8 +267,7 @@ def get_ts_species_from_df_coeffs_NASA(
         coeffs_NASA_dict = coeffs_NASA_dict,
         e_form_dict = e_ts_dict,
         units_energy = units_energy,
-        composition_dict = None,
-        size_dict = None,
+        name_analyzer = None,
     )
 
     return ts_species
@@ -297,17 +287,11 @@ def get_surf_reactions_from_df_coeffs_NASA(
     units_energy = units.eV/units.molecule,
 ):
 
-    df = pd.read_excel(filename, index_col = 0, sheet_name = sheet_e_ts)
-
+    df = pd.read_excel(filename, sheet_name = sheet_e_ts, index_col = 0)
     df_dict = df.to_dict()
     e_ts_dict = df_dict[structure]
 
-    sticking_reactions = [
-        name for name in df_dict['sticking'] if df_dict['sticking'][name]
-    ]
-
-    df = pd.read_excel(filename, index_col = 0, sheet_name = sheet_e_ads)
-
+    df = pd.read_excel(filename, sheet_name = sheet_e_ads, index_col = 0)
     df_dict = df.to_dict()
     e_form_dict = df_dict[structure]
 
@@ -319,15 +303,17 @@ def get_surf_reactions_from_df_coeffs_NASA(
     e_act_dict = {}
     for name in e_ts_dict:
         e_act_dict[name] = e_ts_dict[name]
-        for reactant in name_analyzer.get_reactants(name = name):
-            e_act_dict[name] -= e_form_dict[reactant]
+        if isinstance(e_ts_dict[name], (int, float, np.integer, np.floating)):
+            for reactant in name_analyzer.get_reactants(name = name):
+                e_act_dict[name] -= e_form_dict[reactant]
+
+    sticking_reactions = get_sticking_reactions(e_act_dict)
 
     surf_reactions = get_surf_reactions_from_g0_act_dict_fixed_T(
         gas = gas,
         g0_act_dict = e_act_dict,
         temperature_fixed = 0.,
         name_analyzer = name_analyzer,
-        pre_exp_dict = 'auto',
         site_density = site_density,
         sticking_reactions = sticking_reactions,
         units_energy = units_energy,

@@ -143,8 +143,7 @@ def reactions_from_cat_ts(gas, cat, cat_ts, h0_dict = None, s0_dict = None):
         if isinstance(cat.reaction(ii).rate, ct.InterfaceArrheniusRate):
 
             A_pre = units.kB/units.hP*np.exp(s0_act/units.Rgas)
-            A_pre *= (units.Rgas*cat.T/cat.P)**(len(reactants_gas))
-            #A_pre *= (units.Rgas*cat.T/ct.one_atm)**(len(reactants_gas)) # TODO: check
+            A_pre *= (units.Rgas*cat.T/ct.one_atm)**(len(reactants_gas))
             A_pre *= cat.site_density**(1-len(reactants_ads))
             b_temp = 1.0
 
@@ -228,6 +227,20 @@ def modify_enthalpy(
             coeffs[13] += delta_e*units_energy/ct.gas_constant
             coeffs[6] += delta_e*units_energy/ct.gas_constant
         spec.thermo = ct.NasaPoly2(
+            T_low = spec.thermo.min_temp,
+            T_high = spec.thermo.max_temp,
+            P_ref = spec.thermo.reference_pressure,
+            coeffs = coeffs,
+        )
+
+    elif isinstance(spec.thermo, ct.ShomatePoly2):
+        if e_form is not None:
+            coeffs[13] += e_form*units_energy/(units.kiloJoule/units.mole)-coeffs[6]
+            coeffs[6] = e_form*units_energy/(units.kiloJoule/units.mole)
+        elif delta_e is not None:
+            coeffs[13] += delta_e*units_energy/(units.kiloJoule/units.mole)
+            coeffs[6] += delta_e*units_energy/(units.kiloJoule/units.mole)
+        spec.thermo = ct.ShomatePoly2(
             T_low = spec.thermo.min_temp,
             T_high = spec.thermo.max_temp,
             P_ref = spec.thermo.reference_pressure,

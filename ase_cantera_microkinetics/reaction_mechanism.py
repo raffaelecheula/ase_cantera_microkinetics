@@ -114,7 +114,7 @@ class NameAnalyzer():
         return composition, size
 
 # -----------------------------------------------------------------------------
-# GET SPEC CONSTANT CP
+# GET SPEC CONSTANTCP
 # -----------------------------------------------------------------------------
 
 def get_spec_ConstantCp(
@@ -152,62 +152,7 @@ def get_spec_ConstantCp(
     return spec
 
 # -----------------------------------------------------------------------------
-# GET SPECIES FROM G0 DICT FIXED T
-# -----------------------------------------------------------------------------
-
-def get_species_from_g0_dict_fixed_T(
-    g0_dict,
-    temperature_fixed,
-    units_energy = units.eV/units.molecule,
-    name_analyzer = None,
-    composition_dict = 'auto',
-    size_dict = 'auto',
-):
-
-    species = []
-    for name in g0_dict:
-
-        if (
-            not isinstance(g0_dict[name], (np.floating, float)) or 
-            np.isnan(g0_dict[name])
-        ):
-            continue
-
-        if name_analyzer is not None:
-            composition_auto, size_auto = (
-                name_analyzer.get_composition_and_size(name = name)
-            )
-        
-        if composition_dict == 'auto' and name_analyzer is not None:
-            composition = composition_auto
-        elif composition_dict is None:
-            composition = None
-        else:
-            composition = composition_dict[name]
-        
-        if size_dict == 'auto' and name_analyzer is not None:
-            size = size_auto
-        elif size_dict is None:
-            size = None
-        else:
-            size = size_dict[name]
-
-        spec = get_spec_ConstantCp(
-            name = name,
-            composition = composition,
-            size = size,
-            h0 = g0_dict[name],
-            s0 = 0.00,
-            cP = 0.00,
-            temperature = temperature_fixed,
-            units_energy = units_energy,
-        )
-        species.append(spec)
-
-    return species
-
-# -----------------------------------------------------------------------------
-# GET SPEC FROM COEFFS NASAPOLY2
+# GET SPEC NASAPOLY2
 # -----------------------------------------------------------------------------
 
 def get_spec_NasaPoly2(
@@ -249,6 +194,52 @@ def get_spec_NasaPoly2(
     return spec
 
 # -----------------------------------------------------------------------------
+# GET SPECIES FROM G0 DICT FIXED T
+# -----------------------------------------------------------------------------
+
+def get_species_from_g0_dict_fixed_T(
+    g0_dict,
+    temperature_fixed,
+    units_energy = units.eV/units.molecule,
+    name_analyzer = NameAnalyzer(),
+    composition_dict = None,
+    size_dict = None,
+):
+
+    species = []
+    for name in g0_dict:
+
+        g0 = g0_dict[name]
+        if not isinstance(g0, (int, float, np.integer, np.floating)):
+            g0 = np.nan
+        elif np.isnan(g0):
+            continue
+        
+        composition, size = None, None
+        if name_analyzer is not None:
+            composition, size = name_analyzer.get_composition_and_size(name = name)
+        
+        if composition_dict is not None:
+            composition = composition_dict[name]
+        
+        if size_dict is not None:
+            size = size_dict[name]
+
+        spec = get_spec_ConstantCp(
+            name = name,
+            composition = composition,
+            size = size,
+            h0 = g0,
+            s0 = 0.00,
+            cP = 0.00,
+            temperature = temperature_fixed,
+            units_energy = units_energy,
+        )
+        species.append(spec)
+
+    return species
+
+# -----------------------------------------------------------------------------
 # GET SPECIES FROM COEFFS NASA DICT
 # -----------------------------------------------------------------------------
 
@@ -256,9 +247,9 @@ def get_species_from_coeffs_NASA_dict(
     coeffs_NASA_dict,
     e_form_dict = None,
     units_energy = units.eV/units.molecule,
-    name_analyzer = None,
-    composition_dict = 'auto',
-    size_dict = 'auto',
+    name_analyzer = NameAnalyzer(),
+    composition_dict = None,
+    size_dict = None,
     T_low = 200.00,
     T_mid = 1000.00,
     T_high = 2000.00,
@@ -268,36 +259,37 @@ def get_species_from_coeffs_NASA_dict(
     species = []
     for name in coeffs_NASA_dict:
 
+        coeffs_NASA = coeffs_NASA_dict[name]
+        if not isinstance(coeffs_NASA[0], (np.integer, np.floating, int, float)):
+            coeffs_NASA = [np.nan]*len(coeffs_NASA)
+        elif np.isnan(coeffs_NASA[0]):
+            continue
+
+        composition, size = None, None
         if name_analyzer is not None:
-            composition_auto, size_auto = (
-                name_analyzer.get_composition_and_size(name = name)
-            )
+            composition, size = name_analyzer.get_composition_and_size(name = name)
         
-        if composition_dict == 'auto' and name_analyzer is not None:
-            composition = composition_auto
-        elif composition_dict is None:
-            composition = None
-        else:
+        if composition_dict is not None:
             composition = composition_dict[name]
         
-        if size_dict == 'auto' and name_analyzer is not None:
-            size = size_auto
-        elif size_dict is None:
-            size = None
-        else:
+        if size_dict is not None:
             size = size_dict[name]
 
-        if e_form_dict is not None:
-            e_form = e_form_dict[name]
-        else:
+        if e_form_dict is None:
             e_form = None
+        else:
+            e_form = e_form_dict[name]
+            if not isinstance(e_form, (int, float, np.integer, np.floating)):
+                e_form = np.nan
+            elif np.isnan(e_form):
+                continue
 
         spec = get_spec_NasaPoly2(
             name = name,
             composition = composition,
             size = size,
             e_form = e_form,
-            coeffs_NASA = coeffs_NASA_dict[name],
+            coeffs_NASA = coeffs_NASA,
             units_energy = units_energy,
             T_low = T_low,
             T_mid = T_mid,
@@ -319,12 +311,15 @@ def get_surf_react_from_e_act(
     pre_exp,
     units_energy = units.eV/units.molecule,
     allow_negative_e_act = True,
+    allow_sticking_e_act = True,
 ):
 
     if e_act < 0. and allow_negative_e_act is False:
         e_act = 0.
 
-    if pre_exp == 'stick':
+    if pre_exp == 'sticking':
+        if allow_sticking_e_act is False:
+            e_act = 0.
         rate = ct.StickingArrheniusRate(
             A = +1.0,
             b = +0.0,
@@ -354,11 +349,11 @@ def pre_exp_from_n_reactants_gas_ads(
     site_density,
     s0_act,
     temperature,
-    pressure = ct.one_atm,
+    pressure_ref = ct.one_atm,
 ):
 
     pre_exp = units.kB/units.hP*np.exp(s0_act/units.Rgas)
-    pre_exp *= (units.Rgas*temperature/pressure)**n_reactants_gas
+    pre_exp *= (units.Rgas*temperature/pressure_ref)**n_reactants_gas
     pre_exp *= site_density**(1-n_reactants_ads)
 
     return pre_exp
@@ -371,10 +366,10 @@ def get_surf_reactions_from_g0_act_dict_fixed_T(
     gas,
     g0_act_dict,
     temperature_fixed,
-    name_analyzer = None,
-    pre_exp_dict = 'auto',
+    name_analyzer = NameAnalyzer(),
+    pre_exp_dict = None,
     site_density = None,
-    sticking_reactions = None,
+    sticking_reactions = [],
     units_energy = units.eV/units.molecule,
     P_ref = ct.one_atm,
 ):
@@ -382,39 +377,36 @@ def get_surf_reactions_from_g0_act_dict_fixed_T(
     surf_reactions = []
     for name in g0_act_dict:
 
-        if (
-            not isinstance(g0_act_dict[name], (np.floating, float)) or 
-            np.isnan(g0_act_dict[name])
-        ):
+        g0_act = g0_act_dict[name]
+        if not isinstance(g0_act, (int, float, np.integer, np.floating)):
+            g0_act = np.nan
+        elif np.isnan(g0_act):
             continue
 
         if name_analyzer is not None:
             n_pieces_gas, n_pieces_ads = name_analyzer.get_n_pieces_gas_ads(
                 name = name,
             )
-            if sticking_reactions is None and n_pieces_gas > 0:
-                pre_exp_auto = 'stick'
-            elif sticking_reactions is not None and name in sticking_reactions:
-                pre_exp_auto = 'stick'
-            else:
-                pre_exp_auto = pre_exp_from_n_reactants_gas_ads(
-                    n_reactants_gas = n_pieces_gas,
-                    n_reactants_ads = n_pieces_ads,
-                    site_density = site_density,
-                    s0_act = 0.0,
-                    temperature = temperature_fixed,
-                    pressure = P_ref,
-                )
-
-        if pre_exp_dict == 'auto' and name_analyzer is not None:
-            pre_exp = pre_exp_auto
+            pre_exp = pre_exp_from_n_reactants_gas_ads(
+                n_reactants_gas = n_pieces_gas,
+                n_reactants_ads = n_pieces_ads,
+                site_density = site_density,
+                s0_act = 0.0,
+                temperature = temperature_fixed,
+                pressure_ref = P_ref,
+            )
+        elif pre_exp_dict is not None:
+            pre_exp_dict[name]
         else:
-            pre_exp = pre_exp_dict[name]
+            raise RuntimeError("name_analyzer or pre_exp_dict should be specified")
+
+        if name in sticking_reactions:
+            pre_exp = 'sticking'
 
         react = get_surf_react_from_e_act(
             gas = gas,
             name = name,
-            e_act = g0_act_dict[name],
+            e_act = g0_act,
             pre_exp = pre_exp,
             units_energy = units.eV/units.molecule,
         )
@@ -423,35 +415,13 @@ def get_surf_reactions_from_g0_act_dict_fixed_T(
     return surf_reactions
 
 # -----------------------------------------------------------------------------
-# COEFF NASA DICT FROM DATAFRAME
-# -----------------------------------------------------------------------------
-
-def coeffs_NASA_dict_from_dataframe(
-    dataframe,
-    names = 'all',
-    species_key = 'species',
-    coeff_key = 'NASA',
-):
-
-    features_df = dataframe.columns.to_list()
-    features_NASA = [ff for ff in features_df if coeff_key in ff]
-
-    coeffs_NASA_dict = {}
-    for ii, row in dataframe.iterrows():
-        name = row[species_key]
-        if names == 'all' or name in names:
-            coeffs_NASA_dict[name] = row[features_NASA].to_numpy()
-
-    return coeffs_NASA_dict
-
-# -----------------------------------------------------------------------------
 # CHANGE REFERENCE ENERGIES
 # -----------------------------------------------------------------------------
     
 def change_reference_energies(
     species,
     energy_ref_funs,
-    name_analyzer = None,
+    name_analyzer = NameAnalyzer(),
     composition_dict = None,
     units_energy = units.eV/units.molecule,
 ):
@@ -464,6 +434,10 @@ def change_reference_energies(
             energy[spec.name] = (
                 spec.thermo.coeffs[6]/units_energy*ct.gas_constant
             )
+        elif isinstance(spec.thermo, ct.ShomatePoly2):
+            energy[spec.name] = (
+                spec.thermo.coeffs[6]/(units.kiloJoule/units.mole)*ct.gas_constant
+            )
         else:
             raise NotImplementedError("thermo class not implemented.")
 
@@ -472,9 +446,7 @@ def change_reference_energies(
     
     for spec in species:
         if composition_dict is None:
-            composition, _ = name_analyzer.get_composition_and_size(
-                name = spec.name,
-            )
+            composition, _ = name_analyzer.get_composition_and_size(name = spec.name)
         e_form = energy[spec.name]
         for elem in composition:
             e_form -= energy[elem]*composition[elem]
