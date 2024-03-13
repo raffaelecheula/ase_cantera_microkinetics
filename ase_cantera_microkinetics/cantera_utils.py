@@ -7,6 +7,32 @@ import numpy as np
 from . import units
 
 # -----------------------------------------------------------------------------
+# GET X DICT
+# -----------------------------------------------------------------------------
+
+def get_X_dict(phase):
+
+    X_dict = {}
+    for ii in range(phase.n_species):
+        name = phase.species_names[ii]
+        X_dict[name] = phase.X[ii]
+
+    return X_dict
+
+# -----------------------------------------------------------------------------
+# GET Y DICT
+# -----------------------------------------------------------------------------
+
+def get_Y_dict(phase):
+
+    Y_dict = {}
+    for ii in range(phase.n_species):
+        name = phase.species_names[ii]
+        Y_dict[name] = phase.X[ii]
+
+    return Y_dict
+
+# -----------------------------------------------------------------------------
 # GET ENTHALPIES DICT
 # -----------------------------------------------------------------------------
 
@@ -339,7 +365,10 @@ def degree_rate_control(
             (dni_dot_mod-dni_dot_orig)/dni_dot_orig/(multip_value-1.)
         )
         DRC_vect.append(DRC_species[index_gas_spec])
-        name = cat.reaction(ii).equation
+        if 'name' in cat.reaction(ii).input_data:
+            name = cat.reaction(ii).input_data['name']
+        else:
+            name = cat.reaction(ii).equation
         DRC_dict[name] = DRC_species[index_gas_spec]
 
     if return_dict:
@@ -498,7 +527,10 @@ def reaction_path_analysis(
         else:
             signs_dict[react] = +1
         num_r_dict[react] = ii
-        names_dict[react] = gas.reaction_equation(ii)
+        if 'name' in gas.reaction(ii).input_data:
+            names_dict[react] = gas.reaction(ii).input_data['name']
+        else:
+            names_dict[react] = gas.reaction(ii).equation
         r_net_dict[react] = r_net
         r_for_dict[react] = r_for
         r_rev_dict[react] = r_rev
@@ -515,7 +547,10 @@ def reaction_path_analysis(
         else:
             signs_dict[react] = +1
         num_r_dict[react] = ii
-        names_dict[react] = cat.reaction_equation(ii)
+        if 'name' in cat.reaction(ii).input_data:
+            names_dict[react] = cat.reaction(ii).input_data['name']
+        else:
+            names_dict[react] = cat.reaction(ii).equation
         r_net_dict[react] = r_net
         r_for_dict[react] = r_for
         r_rev_dict[react] = r_rev
@@ -698,6 +733,7 @@ def get_molfracs_from_eta_dict(
     from scipy.optimize import root
 
     gas.TPX = gas.T, gas.P, molfracs_zero_dict
+    molfracs_zero_dict = get_X_dict(gas)
     gas.equilibrate('TP')
     
     molfracs_eq_dict = {}
@@ -712,7 +748,7 @@ def get_molfracs_from_eta_dict(
         products_dict[react_name] = name_analyzer.get_products(react_name)
 
     if x0 is None:
-        x0 = [0.01]*len(eta_dict)
+        x0 = [0.10]*len(eta_dict)
     
     results = root(
         fun = error_eta_dict,

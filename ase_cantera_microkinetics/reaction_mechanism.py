@@ -4,6 +4,7 @@
 
 import numpy as np
 from ase.formula import Formula
+from ase.data import atomic_masses, atomic_numbers
 import cantera as ct
 from . import units
 from .cantera_utils import modify_enthalpy
@@ -85,12 +86,9 @@ class NameAnalyzer():
 
         return reactants
 
-    def get_composition_and_size(self, name, index = 0):
-
+    def get_composition(self, name, include_site = True, index = 0):
+        
         name_new = self.get_names_without_mult_integers(name = name)[index]
-
-        # Get size and composition.
-        size = 0
         composition = {}
         name_new = name_new.replace(" ", "")
         spec_list = name_new.split("+")
@@ -100,18 +98,38 @@ class NameAnalyzer():
                 site = site.split(self.site_separators[2])[0]
                 site_list = site.split(self.site_separators[1])
                 site_str = "".join(site_list)
-                size += len(site_list)
             else:
                 site_str = ""
             spec = spec.split(self.text_separator)[0]
-            comp_spec = Formula(site_str+spec, strict=True).count()
+            if include_site is True:
+                spec = site_str+spec
+            comp_spec = Formula(spec, strict=True).count()
             for elem in comp_spec:
                 if elem in composition:
                     composition[elem] += comp_spec[elem]
                 else:
                     composition[elem] = comp_spec[elem]
+        
+        return composition
+        
+    def get_size(self, name, index = 0):
+        name_new = self.get_names_without_mult_integers(name = name)[index]
+        size = (
+            name_new.count(self.site_separators[0])
+            +name_new.count(self.site_separators[1])
+        )
+        return size
 
+    def get_composition_and_size(self, name, index = 0):
+        composition = self.get_composition(name, index=index)
+        size = self.get_size(name, index=index)
         return composition, size
+
+    def get_molar_mass(self, name):
+        comp_dict = self.get_composition(name)
+        return sum(
+            [atomic_masses[atomic_numbers[ii]]*comp_dict[ii] for ii in comp_dict]
+        ) # [kg/kmol]
 
 # -----------------------------------------------------------------------------
 # GET SPEC CONSTANTCP
@@ -336,6 +354,7 @@ def get_surf_react_from_e_act(
         rate = rate,
         kinetics = gas,
     )
+    react.update_user_data({'name': name})
 
     return react
 
@@ -446,7 +465,7 @@ def change_reference_energies(
     
     for spec in species:
         if composition_dict is None:
-            composition, _ = name_analyzer.get_composition_and_size(name = spec.name)
+            composition = name_analyzer.get_composition(name = spec.name)
         e_form = energy[spec.name]
         for elem in composition:
             e_form -= energy[elem]*composition[elem]
