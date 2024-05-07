@@ -28,7 +28,7 @@ def get_Y_dict(phase):
     Y_dict = {}
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
-        Y_dict[name] = phase.X[ii]
+        Y_dict[name] = phase.Y[ii]
 
     return Y_dict
 
