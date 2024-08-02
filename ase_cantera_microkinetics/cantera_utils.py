@@ -390,6 +390,9 @@ def generalized_degree_rate_control(
     gas_spec_target,
     delta_e = 0.001,
     units_energy = units.eV/units.molecule,
+    reactions_DRC = True,
+    adsorbates_DRC = True,
+    exclude_species = [],
     return_dict = False,
 ):
 
@@ -411,87 +414,94 @@ def generalized_degree_rate_control(
 
     DRC_vect = []
     DRC_dict = {}
-    for ii in range(cat_ts.n_species):
-        spec = cat_ts.species(ii)
-        coeffs_zero = spec.thermo.coeffs.copy()
-        spec = modify_enthalpy(
-            spec = spec,
-            coeffs_zero = coeffs_zero,
-            delta_e = delta_e,
-            units_energy = units_energy,
-        )
-        cat_ts.modify_species(ii, spec)
-        reactions_from_cat_ts(
-            gas = gas,
-            cat = cat,
-            cat_ts = cat_ts,
-        )
-        dni_dot_mod = get_delta_molar_fluxes(
-            gas = gas,
-            sim = sim,
-            TDY = TDY,
-            mdot = mdot,
-            upstream = upstream,
-        )
-        spec = modify_enthalpy(
-            spec = spec,
-            coeffs_zero = coeffs_zero,
-            delta_e = 0.,
-            units_energy = units_energy,
-        )
-        cat_ts.modify_species(ii, spec)
-        reactions_from_cat_ts(
-            gas = gas,
-            cat = cat,
-            cat_ts = cat_ts,
-        )
-        DRC_species = (
-            -(dni_dot_mod-dni_dot_orig)/dni_dot_orig / 
-            (delta_e/units.Rgas/cat.T)
-        )
-        DRC_vect.append(DRC_species[index_gas_spec])
-        DRC_dict[spec.name] = DRC_species[index_gas_spec]
+    
+    if reactions_DRC is True:
+        for ii in range(cat_ts.n_species):
+            spec = cat_ts.species(ii)
+            if spec.name in exclude_species:
+                continue
+            coeffs_zero = spec.thermo.coeffs.copy()
+            spec = modify_enthalpy(
+                spec = spec,
+                coeffs_zero = coeffs_zero,
+                delta_e = delta_e,
+                units_energy = units_energy,
+            )
+            cat_ts.modify_species(ii, spec)
+            reactions_from_cat_ts(
+                gas = gas,
+                cat = cat,
+                cat_ts = cat_ts,
+            )
+            dni_dot_mod = get_delta_molar_fluxes(
+                gas = gas,
+                sim = sim,
+                TDY = TDY,
+                mdot = mdot,
+                upstream = upstream,
+            )
+            spec = modify_enthalpy(
+                spec = spec,
+                coeffs_zero = coeffs_zero,
+                delta_e = 0.,
+                units_energy = units_energy,
+            )
+            cat_ts.modify_species(ii, spec)
+            reactions_from_cat_ts(
+                gas = gas,
+                cat = cat,
+                cat_ts = cat_ts,
+            )
+            DRC_species = (
+                -(dni_dot_mod-dni_dot_orig)/dni_dot_orig / 
+                (delta_e*(units.eV/units.molecule)/units.Rgas/cat.T)
+            )
+            DRC_vect.append(DRC_species[index_gas_spec])
+            DRC_dict[spec.name] = DRC_species[index_gas_spec]
 
-    for ii in range(cat.n_species):
-        spec = cat.species(ii)
-        coeffs_zero = spec.thermo.coeffs.copy()
-        spec = modify_enthalpy(
-            spec = spec,
-            coeffs_zero = coeffs_zero,
-            delta_e = -delta_e,
-            units_energy = units_energy,
-        )
-        cat.modify_species(ii, spec)
-        reactions_from_cat_ts(
-            gas = gas,
-            cat = cat,
-            cat_ts = cat_ts,
-        )
-        dni_dot_mod = get_delta_molar_fluxes(
-            gas = gas,
-            sim = sim,
-            TDY = TDY,
-            mdot = mdot,
-            upstream = upstream,
-        )
-        spec = modify_enthalpy(
-            spec = spec,
-            coeffs_zero = coeffs_zero,
-            delta_e  = 0.,
-            units_energy = units_energy,
-        )
-        cat.modify_species(ii, spec)
-        reactions_from_cat_ts(
-            gas = gas,
-            cat = cat,
-            cat_ts = cat_ts,
-        )
-        DRC_species = (
-            -(dni_dot_mod-dni_dot_orig)/dni_dot_orig / 
-            (delta_e/units.Rgas/cat.T)
-        )
-        DRC_vect.append(DRC_species[index_gas_spec])
-        DRC_dict[spec.name] = DRC_species[index_gas_spec]
+    if adsorbates_DRC is True:
+        for ii in range(cat.n_species):
+            spec = cat.species(ii)
+            if spec.name in exclude_species:
+                continue
+            coeffs_zero = spec.thermo.coeffs.copy()
+            spec = modify_enthalpy(
+                spec = spec,
+                coeffs_zero = coeffs_zero,
+                delta_e = -delta_e,
+                units_energy = units_energy,
+            )
+            cat.modify_species(ii, spec)
+            reactions_from_cat_ts(
+                gas = gas,
+                cat = cat,
+                cat_ts = cat_ts,
+            )
+            dni_dot_mod = get_delta_molar_fluxes(
+                gas = gas,
+                sim = sim,
+                TDY = TDY,
+                mdot = mdot,
+                upstream = upstream,
+            )
+            spec = modify_enthalpy(
+                spec = spec,
+                coeffs_zero = coeffs_zero,
+                delta_e  = 0.,
+                units_energy = units_energy,
+            )
+            cat.modify_species(ii, spec)
+            reactions_from_cat_ts(
+                gas = gas,
+                cat = cat,
+                cat_ts = cat_ts,
+            )
+            DRC_species = (
+                -(dni_dot_mod-dni_dot_orig)/dni_dot_orig / 
+                (delta_e*(units.eV/units.molecule)/units.Rgas/cat.T)
+            )
+            DRC_vect.append(DRC_species[index_gas_spec])
+            DRC_dict[spec.name] = DRC_species[index_gas_spec]
 
     if return_dict:
         return DRC_dict
