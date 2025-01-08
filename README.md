@@ -16,7 +16,7 @@ To install the package, clone the repository and use the following commands:
 ```bash
 git clone https://github.com/raffaelecheula/ase_cantera_microkinetics.git
 cd ase_cantera_microkinetics
-pip -e install .
+pip install -e .
 ```
 
 ## Usage
