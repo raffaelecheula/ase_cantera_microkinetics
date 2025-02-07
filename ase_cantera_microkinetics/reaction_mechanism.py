@@ -299,8 +299,8 @@ def get_surf_react_from_e_act(
     e_act,
     pre_exp,
     units_energy = units.eV/units.molecule,
-    allow_negative_e_act = True,
-    allow_sticking_e_act = True,
+    allow_negative_e_act = False,
+    allow_sticking_e_act = False,
 ):
     """Get a Cantera surface reaction from an activation energy."""
     if e_act < 0. and allow_negative_e_act is False:

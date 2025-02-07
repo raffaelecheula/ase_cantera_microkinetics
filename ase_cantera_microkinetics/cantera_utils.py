@@ -41,9 +41,7 @@ def get_enthalpies_dict(phase, units_energy = units.J/units.kmol):
     h_dict = {}
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
-        h_dict[name] = (
-            phase.standard_enthalpies_RT[ii]*ct.gas_constant*phase.T
-        )
+        h_dict[name] = phase.standard_enthalpies_RT[ii]*ct.gas_constant*phase.T
         h_dict[name] /= units_energy
     return h_dict
 
@@ -61,9 +59,7 @@ def get_std_entropies_dict(phase, units_energy = units.J/units.kmol):
         log_P = np.log(phase.P/ct.one_atm)
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
-        s0_dict[name] = (
-            (phase.standard_entropies_R[ii]+log_P)*ct.gas_constant
-        )
+        s0_dict[name] = (phase.standard_entropies_R[ii]+log_P)*ct.gas_constant
         s0_dict[name] /= units_energy
     return s0_dict
 
@@ -81,9 +77,7 @@ def get_std_gibbs_dict(phase, units_energy = units.J/units.kmol):
         log_P = np.log(phase.P/ct.one_atm)
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
-        g0_dict[name] = (
-            (phase.standard_gibbs_RT[ii]-log_P)*ct.gas_constant*phase.T
-        )
+        g0_dict[name] = (phase.standard_gibbs_RT[ii]-log_P)*ct.gas_constant*phase.T
         g0_dict[name] /= units_energy
     return g0_dict
 
@@ -101,9 +95,7 @@ def get_entropies_dict(phase, units_energy = units.J/units.kmol):
         else:
             xi = phase[name].X[0]
         log_xi = np.log(xi) if xi > 0. else -np.inf
-        s0_dict[name] = (
-            (phase.standard_entropies_R[ii]+log_xi)*ct.gas_constant
-        )
+        s0_dict[name] = (phase.standard_entropies_R[ii]+log_xi)*ct.gas_constant
         s0_dict[name] /= units_energy
 
     return s0_dict
@@ -122,9 +114,7 @@ def get_gibbs_dict(phase, units_energy = units.J/units.kmol):
         else:
             xi = phase[name].X[0]
         log_xi = np.log(xi) if xi > 0. else -np.inf
-        g0_dict[name] = (
-            (phase.standard_gibbs_RT[ii]+log_xi)*ct.gas_constant*phase.T
-        )
+        g0_dict[name] = (phase.standard_gibbs_RT[ii]+log_xi)*ct.gas_constant*phase.T
         g0_dict[name] /= units_energy
     return g0_dict
 
@@ -283,7 +273,7 @@ def advance_sim_to_steady_state(sim, n_try_max = 1000, try_except = True):
                 if sim.max_time_step == 0.0:
                     sim.max_time_step = 1.0
                 else:
-                    sim.max_time_step *= 0.1
+                    sim.max_time_step *= 0.5
         if finished is False:
             raise RuntimeError("Calculation Failed!")
         sim.max_time_step = max_time_step
@@ -763,6 +753,37 @@ def get_deltaG_reaction(
     for spec in products:
         deltaG += gibbs_dict[spec]
     return deltaG
+
+# -------------------------------------------------------------------------------------
+# MOLAR BALANCE OF ELEMENTS
+# -------------------------------------------------------------------------------------
+
+def molar_balance_of_element(
+    gas_in,
+    gas_out,
+    mass=1.,
+    return_fraction=True,
+):
+    """Balance of elements."""
+    from ase_cantera_microkinetics.reaction_mechanism import NameAnalyzer
+    molfracs_in = get_X_dict(gas_in)
+    molfracs_out = get_X_dict(gas_out)
+    moles_tot_in = mass*gas_in.mean_molecular_weight
+    moles_tot_out = mass*gas_out.mean_molecular_weight
+    moles_in = {ii: molfracs_in[ii]*moles_tot_in for ii in molfracs_in}
+    moles_out = {ii: molfracs_out[ii]*moles_tot_out for ii in molfracs_out}
+    name_analyzer = NameAnalyzer()
+    delta_moles = {}
+    for spec in moles_in:
+        composition = name_analyzer.get_composition(spec)
+        for elem in composition:
+            delta_moles[elem] = delta_moles.get(elem, 0.) + (
+                (moles_out[spec]-moles_in[spec]) * composition[elem]
+            )
+    if return_fraction is True:
+        return {elem: delta_moles[elem]/moles_tot_in for elem in delta_moles}
+    else:
+        return delta_moles
 
 # -------------------------------------------------------------------------------------
 # END
