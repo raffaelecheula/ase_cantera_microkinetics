@@ -11,8 +11,12 @@ from ase_cantera_microkinetics import units
 # GET X DICT
 # -------------------------------------------------------------------------------------
 
-def get_X_dict(phase):
-    """Get molar fractions dictionary from a Cantera phase object."""
+def get_X_dict(
+    phase: object,
+) -> dict:
+    """
+    Get molar fractions dictionary from a Cantera phase object.
+    """
     X_dict = {}
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
@@ -23,21 +27,29 @@ def get_X_dict(phase):
 # GET Y DICT
 # -------------------------------------------------------------------------------------
 
-def get_Y_dict(phase):
-    """Get mass fractions dictionary from a Cantera phase object."""
+def get_Y_dict(
+    phase: object,
+) -> dict:
+    """
+    Get mass fractions dictionary from a Cantera phase object.
+    """
     Y_dict = {}
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
         Y_dict[name] = phase.Y[ii]
-
     return Y_dict
 
 # -------------------------------------------------------------------------------------
 # GET ENTHALPIES DICT
 # -------------------------------------------------------------------------------------
 
-def get_enthalpies_dict(phase, units_energy = units.J/units.kmol):
-    """Get enthalpies dictionary from a Cantera phase object."""
+def get_enthalpies_dict(
+    phase: object,
+    units_energy: float = units.J/units.kmol
+) -> dict:
+    """
+    Get enthalpies dictionary from a Cantera phase object.
+    """
     h_dict = {}
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
@@ -49,8 +61,13 @@ def get_enthalpies_dict(phase, units_energy = units.J/units.kmol):
 # GET STD ENTROPIES DICT
 # -------------------------------------------------------------------------------------
 
-def get_std_entropies_dict(phase, units_energy = units.J/units.kmol):
-    """Get standard entropies dictionary from a Cantera phase object."""
+def get_std_entropies_dict(
+    phase: object,
+    units_energy: float = units.J/units.kmol
+) -> dict:
+    """
+    Get standard entropies dictionary from a Cantera phase object.
+    """
     s0_dict = {}
     # standard_entropies_R are calculated at phase.P, not at reference P.
     if isinstance(phase, ct.Interface):
@@ -67,8 +84,13 @@ def get_std_entropies_dict(phase, units_energy = units.J/units.kmol):
 # GET STD GIBBS DICT
 # -------------------------------------------------------------------------------------
 
-def get_std_gibbs_dict(phase, units_energy = units.J/units.kmol):
-    """Get standard Gibbs energies dictionary from a Cantera phase object."""
+def get_std_gibbs_dict(
+    phase: object,
+    units_energy: float = units.J/units.kmol,
+) -> dict:
+    """
+    Get standard Gibbs energies dictionary from a Cantera phase object.
+    """
     g0_dict = {}
     # standard_gibbs_RT are calculated at phase.P, not at reference P.
     if isinstance(phase, ct.Interface):
@@ -85,8 +107,13 @@ def get_std_gibbs_dict(phase, units_energy = units.J/units.kmol):
 # GET ENTROPIES DICT
 # -------------------------------------------------------------------------------------
 
-def get_entropies_dict(phase, units_energy = units.J/units.kmol):
-    """Get entropies dictionary from a Cantera phase object."""
+def get_entropies_dict(
+    phase: object,
+    units_energy: float = units.J/units.kmol,
+) -> dict:
+    """
+    Get entropies dictionary from a Cantera phase object.
+    """
     s0_dict = {}
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
@@ -97,15 +124,19 @@ def get_entropies_dict(phase, units_energy = units.J/units.kmol):
         log_xi = np.log(xi) if xi > 0. else -np.inf
         s0_dict[name] = (phase.standard_entropies_R[ii]+log_xi)*ct.gas_constant
         s0_dict[name] /= units_energy
-
     return s0_dict
 
 # -------------------------------------------------------------------------------------
 # GET GIBBS DICT
 # -------------------------------------------------------------------------------------
 
-def get_gibbs_dict(phase, units_energy = units.J/units.kmol):
-    """Get Gibbs energies dictionary from a Cantera phase object."""
+def get_gibbs_dict(
+    phase: object,
+    units_energy: float = units.J/units.kmol,
+) -> dict:
+    """
+    Get Gibbs energies dictionary from a Cantera phase object.
+    """
     g0_dict = {}
     for ii in range(phase.n_species):
         name = phase.species_names[ii]
@@ -122,8 +153,16 @@ def get_gibbs_dict(phase, units_energy = units.J/units.kmol):
 # REACTIONS FROM CAT TS
 # -------------------------------------------------------------------------------------
 
-def reactions_from_cat_ts(gas, cat, cat_ts, h0_dict = None, s0_dict = None):
-    """Get reactions from a Cantera Interface object representing transition states."""
+def reactions_from_cat_ts(
+    gas: object,
+    cat: object,
+    cat_ts: object,
+    h0_dict: dict = None,
+    s0_dict: dict = None,
+):
+    """
+    Get reactions from a Cantera Interface object representing transition states.
+    """
     if h0_dict is None:
         h0_dict = get_enthalpies_dict(gas)
         h0_dict.update(get_enthalpies_dict(cat))
@@ -174,8 +213,16 @@ def reactions_from_cat_ts(gas, cat, cat_ts, h0_dict = None, s0_dict = None):
 # GET DELTA MOLAR FLUXES
 # -------------------------------------------------------------------------------------
 
-def get_delta_molar_fluxes(gas, sim, TDY, mdot, upstream):
-    """Get the difference in molar fluxes."""
+def get_delta_molar_fluxes(
+    gas: object,
+    sim: object,
+    TDY: dict,
+    mdot: float,
+    upstream: object,
+) -> np.ndarray:
+    """
+    Get the difference in molar fluxes.
+    """
     # Set the gas state.
     gas.TDY = TDY
     if upstream is not None:
@@ -198,13 +245,15 @@ def get_delta_molar_fluxes(gas, sim, TDY, mdot, upstream):
 # -------------------------------------------------------------------------------------
 
 def modify_enthalpy(
-    spec,
-    coeffs_zero = None,
-    e_form = None,
-    delta_e = None,
-    units_energy = units.eV/units.molecule,
+    spec: object,
+    coeffs_zero: list = None,
+    e_form: float = None,
+    delta_e: float = None,
+    units_energy: float = units.eV/units.molecule,
 ):
-    """Modify the enthalpy of a Cantera species object."""
+    """
+    Modify the enthalpy of a Cantera species object.
+    """
     if coeffs_zero is not None:
         coeffs = coeffs_zero.copy()
     else:
@@ -216,10 +265,10 @@ def modify_enthalpy(
         elif delta_e is not None:
             coeffs[1] += delta_e*units_energy
         spec.thermo = ct.ConstantCp(
-            T_low = spec.thermo.min_temp,
-            T_high = spec.thermo.max_temp,
-            P_ref = spec.thermo.reference_pressure,
-            coeffs = coeffs,
+            T_low=spec.thermo.min_temp,
+            T_high=spec.thermo.max_temp,
+            P_ref=spec.thermo.reference_pressure,
+            coeffs=coeffs,
         )
     elif isinstance(spec.thermo, ct.NasaPoly2):
         if e_form is not None:
@@ -229,10 +278,10 @@ def modify_enthalpy(
             coeffs[13] += delta_e*units_energy/ct.gas_constant
             coeffs[6] += delta_e*units_energy/ct.gas_constant
         spec.thermo = ct.NasaPoly2(
-            T_low = spec.thermo.min_temp,
-            T_high = spec.thermo.max_temp,
-            P_ref = spec.thermo.reference_pressure,
-            coeffs = coeffs,
+            T_low=spec.thermo.min_temp,
+            T_high=spec.thermo.max_temp,
+            P_ref=spec.thermo.reference_pressure,
+            coeffs=coeffs,
         )
     elif isinstance(spec.thermo, ct.ShomatePoly2):
         if e_form is not None:
@@ -242,10 +291,10 @@ def modify_enthalpy(
             coeffs[13] += delta_e*units_energy/(units.kiloJoule/units.mole)
             coeffs[6] += delta_e*units_energy/(units.kiloJoule/units.mole)
         spec.thermo = ct.ShomatePoly2(
-            T_low = spec.thermo.min_temp,
-            T_high = spec.thermo.max_temp,
-            P_ref = spec.thermo.reference_pressure,
-            coeffs = coeffs,
+            T_low=spec.thermo.min_temp,
+            T_high=spec.thermo.max_temp,
+            P_ref=spec.thermo.reference_pressure,
+            coeffs=coeffs,
         )
     else:
         raise NotImplementedError("thermo class not implemented.")
@@ -255,8 +304,14 @@ def modify_enthalpy(
 # ADVANCE SIM TO STEADY STATE
 # -------------------------------------------------------------------------------------
 
-def advance_sim_to_steady_state(sim, n_try_max = 1000, try_except = True):
-    """Advance a Cantera ReactorNet object to steady state."""
+def advance_sim_to_steady_state(
+    sim: object,
+    n_try_max: int = 1000,
+    try_except: bool = True,
+):
+    """
+    Advance a Cantera ReactorNet object to steady state.
+    """
     if try_except is True:
         n_try = 0
         finished = False
@@ -286,27 +341,29 @@ def advance_sim_to_steady_state(sim, n_try_max = 1000, try_except = True):
 # -------------------------------------------------------------------------------------
 
 def degree_rate_control(
-    gas,
-    cat,
-    sim,
-    mdot,
-    upstream,
-    gas_spec_target,
-    multip_value = 1.05,
-    return_dict = False,
+    gas: object,
+    cat: object,
+    sim: object,
+    mdot: float,
+    upstream: object,
+    gas_spec_target: str,
+    multip_value: float = 1.05,
+    return_dict: dict = False,
 ):
-    """ Get the degree of rate control of elementary steps in a Cantera Interface 
-    object."""
+    """
+    Get the degree of rate control of elementary steps in a Cantera 
+    Interface object.
+    """
     # Set the gas state.
     TDY = gas.TDY
     index_gas_spec = gas.species_names.index(gas_spec_target)
     # Get the original molar fluxes.
     dni_dot_orig = get_delta_molar_fluxes(
-        gas = gas,
-        sim = sim,
-        TDY = TDY,
-        mdot = mdot,
-        upstream = upstream,
+        gas=gas,
+        sim=sim,
+        TDY=TDY,
+        mdot=mdot,
+        upstream=upstream,
     )
     # Get the degree of rate control.
     DRC_vect = []
@@ -314,19 +371,19 @@ def degree_rate_control(
     for ii in range(cat.n_reactions):
         cat.set_multiplier(value = multip_value, i_reaction = ii)
         dni_dot_mod = get_delta_molar_fluxes(
-            gas = gas,
-            sim = sim,
-            TDY = TDY,
-            mdot = mdot,
-            upstream = upstream,
+            gas=gas,
+            sim=sim,
+            TDY=TDY,
+            mdot=mdot,
+            upstream=upstream,
         )
         cat.set_multiplier(value = 1.0, i_reaction = ii)
         DRC_species = (
-            (dni_dot_mod-dni_dot_orig)/dni_dot_orig/(multip_value-1.)
+            (dni_dot_mod - dni_dot_orig) / dni_dot_orig / (multip_value - 1.)
         )
         DRC_vect.append(DRC_species[index_gas_spec])
-        if 'name' in cat.reaction(ii).input_data:
-            name = cat.reaction(ii).input_data['name']
+        if "name" in cat.reaction(ii).input_data:
+            name = cat.reaction(ii).input_data["name"]
         else:
             name = cat.reaction(ii).equation
         DRC_dict[name] = DRC_species[index_gas_spec]
@@ -355,22 +412,24 @@ def generalized_degree_rate_control(
     exclude_species = [],
     return_dict = False,
 ):
-    """Get the generalized degree of rate control of elementary steps and reaction
-    intermediate in Cantera Interface objects."""
+    """
+    Get the generalized degree of rate control of elementary steps and reaction
+    intermediate in Cantera Interface objects.
+    """
     TDY = gas.TDY
     index_gas_spec = gas.species_names.index(gas_spec_target)
     reactions_from_cat_ts(
-        gas = gas,
-        cat = cat,
-        cat_ts = cat_ts,
+        gas=gas,
+        cat=cat,
+        cat_ts=cat_ts,
     )
     # Get the original molar fluxes.
     dni_dot_orig = get_delta_molar_fluxes(
-        gas = gas,
-        sim = sim,
-        TDY = TDY,
-        mdot = mdot,
-        upstream = upstream,
+        gas=gas,
+        sim=sim,
+        TDY=TDY,
+        mdot=mdot,
+        upstream=upstream,
     )
     # Get the degree of rate control of elementary steps.
     DRC_vect = []
@@ -382,39 +441,39 @@ def generalized_degree_rate_control(
                 continue
             coeffs_zero = spec.thermo.coeffs.copy()
             spec = modify_enthalpy(
-                spec = spec,
-                coeffs_zero = coeffs_zero,
-                delta_e = delta_e,
-                units_energy = units_energy,
+                spec=spec,
+                coeffs_zero=coeffs_zero,
+                delta_e=delta_e,
+                units_energy=units_energy,
             )
             cat_ts.modify_species(ii, spec)
             reactions_from_cat_ts(
-                gas = gas,
-                cat = cat,
-                cat_ts = cat_ts,
+                gas=gas,
+                cat=cat,
+                cat_ts=cat_ts,
             )
             dni_dot_mod = get_delta_molar_fluxes(
-                gas = gas,
-                sim = sim,
-                TDY = TDY,
-                mdot = mdot,
-                upstream = upstream,
+                gas=gas,
+                sim=sim,
+                TDY=TDY,
+                mdot=mdot,
+                upstream=upstream,
             )
             spec = modify_enthalpy(
-                spec = spec,
-                coeffs_zero = coeffs_zero,
-                delta_e = 0.,
-                units_energy = units_energy,
+                spec=spec,
+                coeffs_zero=coeffs_zero,
+                delta_e=0.,
+                units_energy=units_energy,
             )
             cat_ts.modify_species(ii, spec)
             reactions_from_cat_ts(
-                gas = gas,
-                cat = cat,
-                cat_ts = cat_ts,
+                gas=gas,
+                cat=cat,
+                cat_ts=cat_ts,
             )
             DRC_species = (
-                -(dni_dot_mod-dni_dot_orig)/dni_dot_orig / 
-                (delta_e*(units.eV/units.molecule)/units.Rgas/cat.T)
+                -(dni_dot_mod - dni_dot_orig) / dni_dot_orig / 
+                (delta_e * (units.eV / units.molecule) / units.Rgas / cat.T)
             )
             DRC_vect.append(DRC_species[index_gas_spec])
             DRC_dict[spec.name] = DRC_species[index_gas_spec]
@@ -426,39 +485,39 @@ def generalized_degree_rate_control(
                 continue
             coeffs_zero = spec.thermo.coeffs.copy()
             spec = modify_enthalpy(
-                spec = spec,
-                coeffs_zero = coeffs_zero,
-                delta_e = -delta_e,
-                units_energy = units_energy,
+                spec=spec,
+                coeffs_zero=coeffs_zero,
+                delta_e=-delta_e,
+                units_energy=units_energy,
             )
             cat.modify_species(ii, spec)
             reactions_from_cat_ts(
-                gas = gas,
-                cat = cat,
-                cat_ts = cat_ts,
+                gas=gas,
+                cat=cat,
+                cat_ts=cat_ts,
             )
             dni_dot_mod = get_delta_molar_fluxes(
-                gas = gas,
-                sim = sim,
-                TDY = TDY,
-                mdot = mdot,
-                upstream = upstream,
+                gas=gas,
+                sim=sim,
+                TDY=TDY,
+                mdot=mdot,
+                upstream=upstream,
             )
             spec = modify_enthalpy(
-                spec = spec,
-                coeffs_zero = coeffs_zero,
-                delta_e  = 0.,
-                units_energy = units_energy,
+                spec=spec,
+                coeffs_zero=coeffs_zero,
+                delta_e=0.,
+                units_energy=units_energy,
             )
             cat.modify_species(ii, spec)
             reactions_from_cat_ts(
-                gas = gas,
-                cat = cat,
-                cat_ts = cat_ts,
+                gas=gas,
+                cat=cat,
+                cat_ts=cat_ts,
             )
             DRC_species = (
-                -(dni_dot_mod-dni_dot_orig)/dni_dot_orig / 
-                (delta_e*(units.eV/units.molecule)/units.Rgas/cat.T)
+                -(dni_dot_mod - dni_dot_orig) / dni_dot_orig / 
+                (delta_e * (units.eV / units.molecule) / units.Rgas / cat.T)
             )
             DRC_vect.append(DRC_species[index_gas_spec])
             DRC_dict[spec.name] = DRC_species[index_gas_spec]
@@ -473,9 +532,16 @@ def generalized_degree_rate_control(
 # -------------------------------------------------------------------------------------
 
 def reaction_path_analysis(
-    gas, cat, surf, filename = None, mode = 'w+', perc_thold = 0.,
+    gas: object,
+    cat: object,
+    surf: object,
+    filename: str = None,
+    mode: str = "w+",
+    perc_thold: float = 0.,
 ):
-    """Calculate the reaction path analysis of a Cantera Interface object."""
+    """
+    Calculate the reaction path analysis of a Cantera Interface object.
+    """
     RPA_text = ""
     names_dict = {}
     r_net_dict = {}
@@ -496,8 +562,8 @@ def reaction_path_analysis(
         else:
             signs_dict[react] = +1
         num_r_dict[react] = ii
-        if 'name' in gas.reaction(ii).input_data:
-            names_dict[react] = gas.reaction(ii).input_data['name']
+        if "name" in gas.reaction(ii).input_data:
+            names_dict[react] = gas.reaction(ii).input_data["name"]
         else:
             names_dict[react] = gas.reaction(ii).equation
         r_net_dict[react] = r_net
@@ -516,8 +582,8 @@ def reaction_path_analysis(
         else:
             signs_dict[react] = +1
         num_r_dict[react] = ii
-        if 'name' in cat.reaction(ii).input_data:
-            names_dict[react] = cat.reaction(ii).input_data['name']
+        if "name" in cat.reaction(ii).input_data:
+            names_dict[react] = cat.reaction(ii).input_data["name"]
         else:
             names_dict[react] = cat.reaction(ii).equation
         r_net_dict[react] = r_net
@@ -544,14 +610,14 @@ def reaction_path_analysis(
             rates_dict[spec][react] for react in rates_dict[spec]
             if rates_dict[spec][react] < 0.
         ])
-        RPA_block = '\n'+'-'*140+'\n'
+        RPA_block = "\n"+"-"*140+"\n"
         RPA_block += spec.ljust(72+3+6)
-        RPA_block += 'r_net'.ljust(11+3)
-        RPA_block += 'r_perc'.ljust(7+3)
-        RPA_block += 'phi'.ljust(6+3)
-        RPA_block += 'r_for'.ljust(11+3)
-        RPA_block += 'r_rev'.ljust(11)
-        RPA_block += '\n'+'-'*140+'\n'
+        RPA_block += "r_net".ljust(11+3)
+        RPA_block += "r_perc".ljust(7+3)
+        RPA_block += "phi".ljust(6+3)
+        RPA_block += "r_for".ljust(11+3)
+        RPA_block += "r_rev".ljust(11)
+        RPA_block += "\n"+"-"*140+"\n"
         # Get reaction path analysis text.
         for react in sorted(
             rates_dict[spec], key = lambda react: rates_dict[spec][react]
@@ -566,20 +632,20 @@ def reaction_path_analysis(
                 num_r = num_r_dict[react]*signs_dict[react]
                 name_r = names_dict[react]
                 if signs_dict[react] == -1:
-                    if ' <=> ' in name_r:
-                        name_r = ' <=> '.join(reversed(name_r.split(' <=> ')))
-                    elif ' => ' in name_r:
-                        name_r = ' <= '.join(reversed(name_r.split(' => ')))
-                    elif ' = ' in name_r:
-                        name_r = ' = '.join(reversed(name_r.split(' = ')))
-                RPA_block += f' {num_r:+4d} '
-                RPA_block += f'{name_r:72s}   '
-                RPA_block += f'{rates_dict[spec][react]:+11.4e}   '
-                RPA_block += f'{prod_perc:+7.2f}   '
-                RPA_block += f'{phi_r_dict[react]:6.4f}   '
-                RPA_block += f'{r_for_dict[react]:+11.4e}   '
-                RPA_block += f'{r_rev_dict[react]:+11.4e}'
-                RPA_block += '\n'
+                    if " <=> " in name_r:
+                        name_r = " <=> ".join(reversed(name_r.split(" <=> ")))
+                    elif " => " in name_r:
+                        name_r = " <= ".join(reversed(name_r.split(" => ")))
+                    elif " = " in name_r:
+                        name_r = " = ".join(reversed(name_r.split(" = ")))
+                RPA_block += f" {num_r:+4d} "
+                RPA_block += f"{name_r:72s}   "
+                RPA_block += f"{rates_dict[spec][react]:+11.4e}   "
+                RPA_block += f"{prod_perc:+7.2f}   "
+                RPA_block += f"{phi_r_dict[react]:6.4f}   "
+                RPA_block += f"{r_for_dict[react]:+11.4e}   "
+                RPA_block += f"{r_rev_dict[react]:+11.4e}"
+                RPA_block += "\n"
         RPA_text += RPA_block
     # Write the reaction path analysis to a file.
     if filename is not None:
@@ -592,12 +658,14 @@ def reaction_path_analysis(
 # -------------------------------------------------------------------------------------
 
 def get_nonequilirium_ratio(
-    molfracs_dict,
-    molfracs_eq_dict,
-    reactants,
-    products,
+    molfracs_dict: dict,
+    molfracs_eq_dict: dict,
+    reactants: list,
+    products: list,
 ):
-    """Get the nonequilibrium ratio of a reaction."""
+    """
+    Get the nonequilibrium ratio of a reaction.
+    """
     eta_react = 1.
     for spec in products:
         eta_react *= molfracs_dict[spec]/molfracs_eq_dict[spec]
@@ -610,12 +678,14 @@ def get_nonequilirium_ratio(
 # -------------------------------------------------------------------------------------
 
 def get_molfracs_from_lambda(
-    molfracs_zero_dict,
-    lambda_list,
-    reactants_dict,
-    products_dict,
-):
-    """Get the molar fractions from a list of lambda (extent of reaction)."""
+    molfracs_zero_dict: dict,
+    lambda_list: list,
+    reactants_dict: dict,
+    products_dict: dict,
+) -> dict:
+    """
+    Get the molar fractions from a list of lambda (extent of reaction).
+    """
     molfracs_dict = molfracs_zero_dict.copy()
     for spec in molfracs_dict:
         for ii, reaction in enumerate(reactants_dict):
@@ -639,14 +709,16 @@ def get_molfracs_from_lambda(
 # -------------------------------------------------------------------------------------
 
 def error_eta_dict(
-    x,
-    eta_dict,
-    molfracs_zero_dict,
-    molfracs_eq_dict,
-    reactants_dict,
-    products_dict,
-):
-    """Get the error of the nonequilibrium ratios."""
+    x: list,
+    eta_dict: dict,
+    molfracs_zero_dict: dict,
+    molfracs_eq_dict: dict,
+    reactants_dict: dict,
+    products_dict: dict,
+) -> float:
+    """
+    Get the error of the nonequilibrium ratios.
+    """
     # Get the molar fractions from a list of lambda (extent of reaction).
     molfracs_dict = get_molfracs_from_lambda(
         molfracs_zero_dict = molfracs_zero_dict,
@@ -660,10 +732,10 @@ def error_eta_dict(
         reactants = reactants_dict[react_name]
         products = products_dict[react_name]
         eta_react = get_nonequilirium_ratio(
-            molfracs_dict = molfracs_dict,
-            molfracs_eq_dict = molfracs_eq_dict,
-            reactants = reactants,
-            products = products,
+            molfracs_dict=molfracs_dict,
+            molfracs_eq_dict=molfracs_eq_dict,
+            reactants=reactants,
+            products=products,
         )
         error.append(eta_react-eta_dict[react_name])
     # Add errors if the molar fractions are out of bounds.
@@ -680,20 +752,22 @@ def error_eta_dict(
 # -------------------------------------------------------------------------------------
 
 def get_molfracs_from_eta_dict(
-    gas,
-    eta_dict,
-    molfracs_zero_dict,
-    x0 = None,
-    method = 'hybr',
-    options = None,
-):
-    """Get the molar fractions from a dictionary of nonequilibrium ratios."""
+    gas: object,
+    eta_dict: dict,
+    molfracs_zero_dict: dict,
+    x0: list = None,
+    method: str = "hybr",
+    options: dict = None,
+) -> dict:
+    """
+    Get the molar fractions from a dictionary of nonequilibrium ratios.
+    """
     from ase_cantera_microkinetics.reaction_mechanism import NameAnalyzer
     from scipy.optimize import root
     # Get the equilibrium molar fractions.
     gas.TPX = gas.T, gas.P, molfracs_zero_dict
     molfracs_zero_dict = get_X_dict(gas)
-    gas.equilibrate('TP')
+    gas.equilibrate("TP")
     molfracs_eq_dict = {}
     for spec in gas.species_names:
         molfracs_eq_dict[spec] = gas[spec].X[0]
@@ -708,11 +782,11 @@ def get_molfracs_from_eta_dict(
     if x0 is None:
         x0 = [0.10]*len(eta_dict)
     results = root(
-        fun = error_eta_dict,
-        x0 = x0,
-        method = method,
-        options = options,
-        args = (
+        fun=error_eta_dict,
+        x0=x0,
+        method=method,
+        options=options,
+        args=(
             eta_dict,
             molfracs_zero_dict,
             molfracs_eq_dict,
@@ -725,10 +799,10 @@ def get_molfracs_from_eta_dict(
     # Get the molar fractions dictionary.
     lambda_list = results.x
     molfracs_dict = get_molfracs_from_lambda(
-        molfracs_zero_dict = molfracs_zero_dict,
-        lambda_list = lambda_list,
-        reactants_dict = reactants_dict,
-        products_dict = products_dict,
+        molfracs_zero_dict=molfracs_zero_dict,
+        lambda_list=lambda_list,
+        reactants_dict=reactants_dict,
+        products_dict=products_dict,
     )
     # Set the gas state.
     gas.TPX = gas.T, gas.P, molfracs_dict
@@ -739,10 +813,12 @@ def get_molfracs_from_eta_dict(
 # -------------------------------------------------------------------------------------
 
 def get_deltaG_reaction(
-    reaction_name,
-    gibbs_dict,
-):
-    """Get the Gibbs energy of a reaction."""
+    reaction_name: str,
+    gibbs_dict: dict,
+) -> float:
+    """
+    Get the Gibbs energy of a reaction.
+    """
     from ase_cantera_microkinetics.reaction_mechanism import NameAnalyzer
     name_analyzer = NameAnalyzer()
     reactants = name_analyzer.get_reactants(reaction_name)
@@ -761,10 +837,12 @@ def get_deltaG_reaction(
 def molar_balance_of_element(
     gas_in,
     gas_out,
-    mass=1.,
-    return_fraction=True,
-):
-    """Balance of elements."""
+    mass: float = 1.,
+    return_fraction: bool = True,
+) -> dict:
+    """
+    Balance of elements.
+    """
     from ase_cantera_microkinetics.reaction_mechanism import NameAnalyzer
     molfracs_in = get_X_dict(gas_in)
     molfracs_out = get_X_dict(gas_out)

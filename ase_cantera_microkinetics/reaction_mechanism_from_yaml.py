@@ -45,14 +45,14 @@ def get_species_from_yaml_NASA7(
 # -------------------------------------------------------------------------------------
 
 def get_mechanism_from_yaml(
-    yaml_file='mechanism.yaml',
+    yaml_file="mechanism.yaml",
     e_form_dict=None,
     site_density=1e-8,
     temperature=298.15,
     units_energy=units.eV/units.molecule,
 ):
     # Read the reaction mechanism.
-    with open(yaml_file, 'r') as fileobj:
+    with open(yaml_file, "r") as fileobj:
         mechanism = yaml.safe_load(fileobj)
     # Get gas species.
     gas_species = get_species_from_yaml_NASA7(
@@ -79,10 +79,10 @@ def get_mechanism_from_yaml(
     ]
     # Initialize gas phase.
     gas = ct.Solution(
-        name='gas',
+        name="gas",
         species=gas_species,
-        thermo='ideal-gas',
-        transport='Mix',
+        thermo="ideal-gas",
+        transport="Mix",
     )
     # Initialize surface reactions.
     surf_reactions = get_surf_reactions_from_g0_act_dict_fixed_T(
@@ -94,19 +94,19 @@ def get_mechanism_from_yaml(
     )
     # Initialize catalyst phase (adsorbates).
     cat = ct.Interface(
-        name='cat',
+        name="cat",
         species=ads_species,
         reactions=surf_reactions,
-        thermo='ideal-surface',
-        kinetics='surface',
+        thermo="ideal-surface",
+        kinetics="surface",
         adjacent=[gas],
     )
     # Initialize catalyst phase (transition states).
     cat_ts = ct.Interface(
-        name='cat_ts',
+        name="cat_ts",
         species=ts_species,
-        thermo='ideal-surface',
-        kinetics='surface',
+        thermo="ideal-surface",
+        kinetics="surface",
         adjacent=[gas],
     )
     cat.site_density = site_density
@@ -127,10 +127,10 @@ def get_e_form_from_ase_atoms(
     e_form_key="E_form",
     e_index=None,
     species_key="species_cantera",
-    e_form_missing=1.,
+    e_form_missing=2.,
 ):
     # Read the reaction mechanism.
-    with open(yaml_file, 'r') as fileobj:
+    with open(yaml_file, "r") as fileobj:
         mechanism = yaml.safe_load(fileobj)
     # Get species lists.
     adsorbates_list = [
@@ -152,8 +152,11 @@ def get_e_form_from_ase_atoms(
             if e_index is None else atoms.info[e_form_key][e_index]
             for atoms in atoms_list
         ]
-        e_form = np.min(e_form_list) if len(e_form_list) > 0 else e_form_missing
-        e_form_dict[species_name] = e_form
+        if len(e_form_list) > 0:
+            e_form_dict[species_name] = np.min(e_form_list)
+        else:
+            print(f"Missing: {species_name}")
+            e_form_dict[species_name] = e_form_missing
     for species_name in reactions_list:
         atoms_list = [
             atoms for atoms in atoms_ts_list
@@ -164,8 +167,11 @@ def get_e_form_from_ase_atoms(
             if e_index is None else atoms.info[e_form_key][e_index]
             for atoms in atoms_list
         ]
-        e_form = np.min(e_form_list) if len(e_form_list) > 0 else e_form_missing
-        e_form_dict[species_name] = e_form
+        if len(e_form_list) > 0:
+            e_form_dict[species_name] = np.min(e_form_list)
+        else:
+            print(f"Missing: {species_name}")
+            e_form_dict[species_name] = e_form_missing
     return e_form_dict
 
 # -------------------------------------------------------------------------------------
