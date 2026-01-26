@@ -46,7 +46,7 @@ class NameAnalyzer():
             for piece in pieces:
                 if " " in piece:
                     mm, pp = piece.split(" ")
-                    pieces_new += [pp]*int(mm)
+                    pieces_new += [pp] * int(mm)
                 else:
                     pieces_new += [piece]
             names_new.append(" + ".join(pieces_new))
@@ -75,7 +75,7 @@ class NameAnalyzer():
         return reactants
 
     def get_composition(self, name, include_site = True, index = 0):
-        name_new = self.get_names_without_mult_integers(name = name)[index]
+        name_new = self.get_names_without_mult_integers(name=name)[index]
         composition = {}
         name_new = name_new.replace(" ", "")
         spec_list = name_new.split("+")
@@ -122,17 +122,17 @@ class NameAnalyzer():
 # -------------------------------------------------------------------------------------
 
 def get_spec_ConstantCp(
-    name,
-    h0,
-    s0,
-    cP,
-    temperature,
-    composition = None,
-    size = None,
-    units_energy = units.eV/units.molecule,
-    T_low = 200.00,
-    T_high = 2000.00,
-    P_ref = ct.one_atm,
+    name: str,
+    h0: float,
+    s0: float,
+    cP: float,
+    temperature: float,
+    composition: dict = None,
+    size: int = None,
+    units_energy: float = units.eV/units.molecule,
+    T_low: float = 200.00,
+    T_high: float = 2000.00,
+    P_ref: float = ct.one_atm,
 ):
     """
     Get a Cantera species with constant heat capacity thermodynamics.
@@ -161,16 +161,16 @@ def get_spec_ConstantCp(
 # -------------------------------------------------------------------------------------
 
 def get_spec_NasaPoly2(
-    name,
-    coeffs_NASA,
-    e_form = None,
-    composition = None,
-    size = None,
-    units_energy = units.eV/units.molecule,
-    T_low = 200.00,
-    T_mid = 1000.00,
-    T_high = 2000.00,
-    P_ref = ct.one_atm,
+    name: str,
+    coeffs_NASA: list,
+    e_form: float = None,
+    composition: dict = None,
+    size: int = None,
+    units_energy: float = units.eV/units.molecule,
+    T_low: float = 200.00,
+    T_mid: float = 1000.00,
+    T_high: float = 2000.00,
+    P_ref: float = ct.one_atm,
 ):
     """
     Get a Cantera species with NASA polynomial thermodynamics.
@@ -181,14 +181,14 @@ def get_spec_NasaPoly2(
         size=size,
     )
     if len(coeffs_NASA) == 7:
-        coeffs = [T_mid]+list(coeffs_NASA)*2
+        coeffs = [T_mid] + list(coeffs_NASA) * 2
     elif len(coeffs_NASA) == 14:
-        coeffs = [T_mid]+list(coeffs_NASA)
+        coeffs = [T_mid] + list(coeffs_NASA)
     else:
         coeffs = list(coeffs_NASA)
     if e_form is not None:
-        coeffs[6] += e_form*units_energy/ct.gas_constant
-        coeffs[13] += e_form*units_energy/ct.gas_constant
+        coeffs[6] += e_form * units_energy / ct.gas_constant
+        coeffs[13] += e_form * units_energy / ct.gas_constant
     spec.thermo = ct.NasaPoly2(
         T_low=T_low,
         T_high=T_high,
@@ -202,12 +202,12 @@ def get_spec_NasaPoly2(
 # -------------------------------------------------------------------------------------
 
 def get_species_from_g0_dict_fixed_T(
-    g0_dict,
-    temperature_fixed,
-    units_energy = units.eV/units.molecule,
-    name_analyzer = NameAnalyzer(),
-    composition_dict = None,
-    size_dict = None,
+    g0_dict: dict,
+    temperature_fixed: float,
+    units_energy: float = units.eV/units.molecule,
+    name_analyzer: object = NameAnalyzer(),
+    composition_dict: dict = None,
+    size_dict: dict = None,
 ):
     """
     Get Cantera species from a dictionary of Gibbs free energies at fixed
@@ -245,16 +245,16 @@ def get_species_from_g0_dict_fixed_T(
 # -------------------------------------------------------------------------------------
 
 def get_species_from_coeffs_NASA_dict(
-    coeffs_NASA_dict,
-    e_form_dict = None,
-    units_energy = units.eV/units.molecule,
-    name_analyzer = NameAnalyzer(),
-    composition_dict = None,
-    size_dict = None,
-    T_low = 200.00,
-    T_mid = 1000.00,
-    T_high = 2000.00,
-    P_ref = ct.one_atm,
+    coeffs_NASA_dict: dict,
+    e_form_dict: dict = None,
+    units_energy: float = units.eV/units.molecule,
+    name_analyzer: object = NameAnalyzer(),
+    composition_dict: dict = None,
+    size_dict: dict = None,
+    T_low: float = 200.00,
+    T_mid: float = 1000.00,
+    T_high: float = 2000.00,
+    P_ref: float = ct.one_atm,
 ):
     """
     Get Cantera species from a dictionary of NASA polynomial coefficients.
@@ -302,13 +302,13 @@ def get_species_from_coeffs_NASA_dict(
 # -------------------------------------------------------------------------------------
 
 def get_surf_react_from_e_act(
-    gas,
-    name,
-    e_act,
-    pre_exp,
-    units_energy = units.eV/units.molecule,
-    allow_negative_e_act = False,
-    allow_sticking_e_act = False,
+    gas: ct.Interface,
+    name: str,
+    e_act: float,
+    pre_exp: float,
+    units_energy: float = units.eV/units.molecule,
+    allow_negative_e_act: bool = False,
+    allow_sticking_e_act: bool = False,
 ):
     """
     Get a Cantera surface reaction from an activation energy.
@@ -342,19 +342,19 @@ def get_surf_react_from_e_act(
 # -------------------------------------------------------------------------------------
 
 def pre_exp_from_n_reactants_gas_ads(
-    n_reactants_gas,
-    n_reactants_ads,
-    site_density,
-    s0_act,
-    temperature,
-    pressure_ref = ct.one_atm,
+    n_reactants_gas: int,
+    n_reactants_ads: int,
+    site_density: float,
+    s0_act: float,
+    temperature: float,
+    pressure_ref: float = ct.one_atm,
 ):
     """
     Get the pre-exponential factor for a surface reaction.
     """
-    pre_exp = units.kB/units.hP*np.exp(s0_act/units.Rgas)
-    pre_exp *= (units.Rgas*temperature/pressure_ref)**n_reactants_gas
-    pre_exp *= site_density**(1-n_reactants_ads)
+    pre_exp = units.kB / units.hP * np.exp(s0_act / units.Rgas)
+    pre_exp *= (units.Rgas * temperature / pressure_ref) ** n_reactants_gas
+    pre_exp *= site_density ** (1 - n_reactants_ads)
     return pre_exp
 
 # -------------------------------------------------------------------------------------
@@ -362,15 +362,15 @@ def pre_exp_from_n_reactants_gas_ads(
 # -------------------------------------------------------------------------------------
 
 def get_surf_reactions_from_g0_act_dict_fixed_T(
-    gas,
-    g0_act_dict,
-    temperature_fixed,
-    name_analyzer = NameAnalyzer(),
-    pre_exp_dict = None,
-    site_density = None,
-    sticking_reactions = [],
-    units_energy = units.eV/units.molecule,
-    P_ref = ct.one_atm,
+    gas: ct.Interface,
+    g0_act_dict: dict,
+    temperature_fixed: float,
+    name_analyzer: object = NameAnalyzer(),
+    pre_exp_dict: dict = None,
+    site_density: float = None,
+    sticking_reactions: list = [],
+    units_energy: float = units.eV/units.molecule,
+    P_ref: float = ct.one_atm,
 ):
     """
     Get Cantera surface reactions from a dictionary of activation Gibbs free 
@@ -406,7 +406,7 @@ def get_surf_reactions_from_g0_act_dict_fixed_T(
             name=name,
             e_act=g0_act,
             pre_exp=pre_exp,
-            units_energy=units.eV/units.molecule,
+            units_energy=units.eV / units.molecule,
         )
         surf_reactions.append(react)
     return surf_reactions
@@ -416,11 +416,11 @@ def get_surf_reactions_from_g0_act_dict_fixed_T(
 # -------------------------------------------------------------------------------------
     
 def change_reference_energies(
-    species,
-    energy_ref_funs,
-    name_analyzer = NameAnalyzer(),
-    composition_dict = None,
-    units_energy = units.eV/units.molecule,
+    species: list,
+    energy_ref_funs: dict,
+    name_analyzer: object = NameAnalyzer(),
+    composition_dict: dict = None,
+    units_energy: float = units.eV / units.molecule,
 ):
     """
     Change the reference energies of species.
@@ -428,14 +428,12 @@ def change_reference_energies(
     energy = {}
     for spec in species:
         if isinstance(spec.thermo, ct.ConstantCp):
-            energy[spec.name] = spec.thermo.coeffs[1]/units_energy
+            energy[spec.name] = spec.thermo.coeffs[1] / units_energy
         elif isinstance(spec.thermo, ct.NasaPoly2):
-            energy[spec.name] = (
-                spec.thermo.coeffs[6]/units_energy*ct.gas_constant
-            )
+            energy[spec.name] = spec.thermo.coeffs[6] * ct.gas_constant / units_energy
         elif isinstance(spec.thermo, ct.ShomatePoly2):
-            energy[spec.name] = (
-                spec.thermo.coeffs[6]/(units.kiloJoule/units.mole)*ct.gas_constant
+            energy[spec.name] = spec.thermo.coeffs[6] * ct.gas_constant / (
+                units.kiloJoule / units.mole
             )
         else:
             raise NotImplementedError("thermo class not implemented.")
@@ -446,7 +444,7 @@ def change_reference_energies(
             composition = name_analyzer.get_composition(name=spec.name)
         e_form = energy[spec.name]
         for elem in composition:
-            e_form -= energy[elem]*composition[elem]
+            e_form -= energy[elem] * composition[elem]
         spec = modify_enthalpy(
             spec=spec,
             e_form=e_form,

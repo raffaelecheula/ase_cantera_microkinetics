@@ -15,7 +15,9 @@ def read_vib_energies(
     filename: str = "vib.log",
     imaginary: bool = False,
 ) -> list:
-    """Read vibrational energies from an ASE Vibrations log file."""
+    """
+    Read vibrational energies from an ASE Vibrations log file.
+    """
     vib_energies = []
     with open(filename, "rU") as fileobj:
         lines = fileobj.readlines()
@@ -25,9 +27,9 @@ def read_vib_energies(
         string = lines[i].split()[1]
         if string[-1] == "i":
             if imaginary is True:
-                vib_energies.append(complex(0., float(string[:-1])*1e-3))
+                vib_energies.append(complex(0., float(string[:-1]) * 1e-3))
         else:
-            vib_energies.append(complex(float(string)*1e-3))
+            vib_energies.append(complex(float(string) * 1e-3))
     return vib_energies
 
 # -------------------------------------------------------------------------------------
@@ -196,14 +198,14 @@ def ase_thermo_to_NASA_coeffs(
         else:
             raise RuntimeError("thermo class cannot calculate H0.")
         if subtract_ZPE is True:
-            H0_array[ii] = (H0-ZPE) * units.eV/units.molecule/units.Rgas
+            H0_array[ii] = (H0 - ZPE) * units.eV / units.molecule / units.Rgas
         else:
-            H0_array[ii] = H0 * units.eV/units.molecule/units.Rgas
+            H0_array[ii] = H0 * units.eV / units.molecule / units.Rgas
         S0 = thermo.get_entropy(
             temperature=T_array[ii],
             verbose=False,
         )
-        S0_array[ii] = S0 * units.eV/units.molecule/units.Rgas
+        S0_array[ii] = S0 * units.eV / units.molecule / units.Rgas
         if coeffs_ref is not None:
             H0_array[ii] -= H0_from_NASA(T_array[ii], coeffs_ref)
             S0_array[ii] -= S0_from_NASA(T_array[ii], coeffs_ref)

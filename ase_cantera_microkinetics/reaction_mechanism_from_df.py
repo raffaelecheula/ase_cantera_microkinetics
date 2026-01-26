@@ -21,13 +21,13 @@ from ase_cantera_microkinetics.reaction_mechanism import (
 # -------------------------------------------------------------------------------------
 
 def get_gas_species_from_df_fixed_T(
-    filename,
+    filename: str,
     energy_ref_funs,
-    temperature_fixed,
-    structure = "gas",
-    sheet_g0_gas = "g0_gas",
+    temperature_fixed: float,
+    structure: str = "gas",
+    sheet_g0_gas: str = "g0_gas",
     name_analyzer = NameAnalyzer(),
-    units_energy = units.eV/units.molecule,
+    units_energy = units.eV / units.molecule,
     change_reference = True,
 ):
     """
@@ -59,12 +59,12 @@ def get_gas_species_from_df_fixed_T(
 # -------------------------------------------------------------------------------------
 
 def get_ads_species_from_df_fixed_T(
-    filename,
-    structure,
-    temperature_fixed,
-    sheet_g0_ads = "g0_ads",
-    name_analyzer = NameAnalyzer(),
-    units_energy = units.eV/units.molecule,
+    filename: str,
+    structure: str,
+    temperature_fixed: float,
+    sheet_g0_ads: str = "g0_ads",
+    name_analyzer: object = NameAnalyzer(),
+    units_energy: float = units.eV/units.molecule,
 ):
     """
     Get ads species from excel file at fixed temperature.
@@ -88,11 +88,11 @@ def get_ads_species_from_df_fixed_T(
 # -------------------------------------------------------------------------------------
 
 def get_ts_species_from_df_fixed_T(
-    filename,
-    structure,
-    temperature_fixed,
-    sheet_g0_ts = "g0_ts",
-    units_energy = units.eV/units.molecule,
+    filename: str,
+    structure: str,
+    temperature_fixed: float,
+    sheet_g0_ts: str = "g0_ts",
+    units_energy: float = units.eV/units.molecule,
 ):
     """
     Get transition state species from excel file at fixed temperature.
@@ -115,7 +115,9 @@ def get_ts_species_from_df_fixed_T(
 # GET STICKING REACTIONS
 # -------------------------------------------------------------------------------------
 
-def get_sticking_reactions(e_act_dict):
+def get_sticking_reactions(
+    e_act_dict: dict,
+):
     """
     Get sticking reactions from activation energies dictionary.
     """
@@ -134,15 +136,15 @@ def get_sticking_reactions(e_act_dict):
 # -------------------------------------------------------------------------------------
 
 def get_surf_reactions_from_df_fixed_T(
-    filename,
-    gas,
-    site_density,
-    structure,
-    temperature_fixed,
-    sheet_g0_ads = "g0_ads",
-    sheet_g0_ts = "g0_ts",
-    name_analyzer = NameAnalyzer(),
-    units_energy = units.eV/units.molecule,
+    filename: str,
+    gas: ct.Solution,
+    site_density: float,
+    structure: str,
+    temperature_fixed: float,
+    sheet_g0_ads: str = "g0_ads",
+    sheet_g0_ts: str = "g0_ts",
+    name_analyzer: object = NameAnalyzer(),
+    units_energy: float = units.eV / units.molecule,
 ):
     """
     Get surface reactions from excel file at fixed temperature.
@@ -185,13 +187,13 @@ def get_surf_reactions_from_df_fixed_T(
 # -------------------------------------------------------------------------------------
 
 def get_gas_species_from_df_coeffs_NASA(
-    filename,
-    energy_ref_funs,
-    names = "all",
-    sheet_coeffs = "coeffs_gas",
-    name_analyzer = NameAnalyzer(),
-    units_energy = units.eV/units.molecule,
-    change_reference = True,
+    filename: str,
+    energy_ref_funs: dict,
+    names: list = "all",
+    sheet_coeffs: str = "coeffs_gas",
+    name_analyzer: object = NameAnalyzer(),
+    units_energy: float = units.eV / units.molecule,
+    change_reference: bool = True,
 ):
     """
     Get gas species from excel file with NASA polynomial coefficients.
@@ -199,10 +201,9 @@ def get_gas_species_from_df_coeffs_NASA(
     # Read NASA coefficients from excel file.
     df = pd.read_excel(filename, sheet_name=sheet_coeffs, index_col=0)
     df_dict = df.to_dict(orient="index")
-    coeffs_NASA_dict = {
-        name: list(df_dict[name].values()) 
-        for name in df_dict if names == "all" or name in names
-    }
+    if names == "all":
+        names = list(df_dict.keys())
+    coeffs_NASA_dict = {name: list(df_dict[name].values()) for name in names}
     # Get gas species.
     gas_species = get_species_from_coeffs_NASA_dict(
         coeffs_NASA_dict=coeffs_NASA_dict,
@@ -225,17 +226,16 @@ def get_gas_species_from_df_coeffs_NASA(
 # -------------------------------------------------------------------------------------
 
 def get_ads_species_from_df_coeffs_NASA(
-    filename,
-    structure,
-    sheet_coeffs = "coeffs_ads",
-    sheet_e_ads = "e_ads",
-    names = "all",
-    name_analyzer = NameAnalyzer(),
-    units_energy = units.eV/units.molecule,
+    filename: str,
+    structure: str,
+    sheet_coeffs: str = "coeffs_ads",
+    sheet_e_ads: str = "e_ads",
+    names: list = "all",
+    name_analyzer: object = NameAnalyzer(),
+    units_energy: float = units.eV / units.molecule,
 ):
     """
-    Get reaction intermediates species from excel file with NASA polynomial
-    coefficients.
+    Get reaction intermediates species from excel file with NASA coefficients.
     """
     # Read NASA coefficients from excel file.
     df = pd.read_excel(filename, sheet_name=sheet_coeffs, index_col=0)
@@ -262,16 +262,15 @@ def get_ads_species_from_df_coeffs_NASA(
 # -------------------------------------------------------------------------------------
 
 def get_ts_species_from_df_coeffs_NASA(
-    filename,
-    structure,
-    sheet_coeffs = "coeffs_ts",
-    sheet_e_ts = "e_ts",
-    names = "all",
-    units_energy = units.eV/units.molecule,
+    filename: str,
+    structure: str,
+    sheet_coeffs: str = "coeffs_ts",
+    sheet_e_ts: str = "e_ts",
+    names: list = "all",
+    units_energy: float = units.eV / units.molecule,
 ):
     """
-    Get transition state species from excel file with NASA polynomial
-    coefficients.
+    Get transition state species from excel file with NASA coefficients.
     """
     # Read NASA coefficients from excel file.
     df = pd.read_excel(filename, sheet_name=sheet_coeffs, index_col=0)
@@ -298,17 +297,17 @@ def get_ts_species_from_df_coeffs_NASA(
 # -------------------------------------------------------------------------------------
 
 def get_surf_reactions_from_df_coeffs_NASA(
-    filename,
-    gas,
-    site_density,
-    structure,
-    sheet_e_ads = "e_ads",
-    sheet_e_ts = "e_ts",
-    name_analyzer = NameAnalyzer(),
-    units_energy = units.eV/units.molecule,
+    filename: str,
+    gas: ct.Solution,
+    site_density: float,
+    structure: str,
+    sheet_e_ads: str = "e_ads",
+    sheet_e_ts: str = "e_ts",
+    name_analyzer: object = NameAnalyzer(),
+    units_energy: float = units.eV/units.molecule,
 ):
     """
-    Get surface reactions from excel file with NASA polynomial coefficients.
+    Get surface reactions from excel file with NASA coefficients.
     """
     # Get trantisiton state energies from excel file.
     df = pd.read_excel(filename, sheet_name=sheet_e_ts, index_col=0)
@@ -319,7 +318,7 @@ def get_surf_reactions_from_df_coeffs_NASA(
     df_dict = df.to_dict()
     e_form_dict = df_dict[structure]
     for spec in gas.species():
-        e_form_dict[spec.name] = spec.thermo.coeffs[6]*ct.gas_constant/units_energy
+        e_form_dict[spec.name] = spec.thermo.coeffs[6] * ct.gas_constant / units_energy
     # Get activation energies dictionary.
     e_act_dict = {}
     for name in e_ts_dict:

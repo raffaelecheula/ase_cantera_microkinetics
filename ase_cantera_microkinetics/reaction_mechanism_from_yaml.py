@@ -18,11 +18,13 @@ from ase_cantera_microkinetics.reaction_mechanism import (
 # -------------------------------------------------------------------------------------
 
 def get_species_from_yaml_NASA7(
-    species_list,
-    e_form_dict={},
-    units_energy=units.eV/units.molecule,
+    species_list: list,
+    e_form_dict: dict = {},
+    units_energy: float = units.eV / units.molecule,
 ):
-    # Get species from YAML dictionary.
+    """
+    Get species from YAML dictionary.
+    """
     species_cantera = []
     for species_dict in species_list:
         T_list = species_dict["thermo"]["temperature-ranges"]
@@ -45,12 +47,15 @@ def get_species_from_yaml_NASA7(
 # -------------------------------------------------------------------------------------
 
 def get_mechanism_from_yaml(
-    yaml_file="mechanism.yaml",
-    e_form_dict=None,
-    site_density=1e-8,
-    temperature=298.15,
-    units_energy=units.eV/units.molecule,
+    yaml_file: str = "mechanism.yaml",
+    e_form_dict: dict = None,
+    site_density: float = 1e-8,
+    temperature: float = 298.15,
+    units_energy: float = units.eV / units.molecule,
 ):
+    """
+    Get Cantera gas and catalyst phases from YAML reaction mechanism.
+    """
     # Read the reaction mechanism.
     with open(yaml_file, "r") as fileobj:
         mechanism = yaml.safe_load(fileobj)
@@ -120,15 +125,18 @@ def get_mechanism_from_yaml(
 # -------------------------------------------------------------------------------------
 
 def get_e_form_from_ase_atoms(
-    yaml_file,
-    atoms_ads_list,
-    atoms_ts_list,
-    free_site,
-    e_form_key="E_form",
-    e_index=None,
-    species_key="species_cantera",
-    e_form_missing=2.,
+    yaml_file: str,
+    atoms_ads_list: list,
+    atoms_ts_list: list,
+    free_site: str,
+    e_form_key: str = "E_form",
+    e_index: int = None,
+    species_key: str = "species_cantera",
+    e_form_missing: float = 2.,
 ):
+    """
+    Get formation energies from ASE Atoms list.
+    """
     # Read the reaction mechanism.
     with open(yaml_file, "r") as fileobj:
         mechanism = yaml.safe_load(fileobj)
@@ -173,6 +181,27 @@ def get_e_form_from_ase_atoms(
             print(f"Missing: {species_name}")
             e_form_dict[species_name] = e_form_missing
     return e_form_dict
+
+# -------------------------------------------------------------------------------------
+# GET ATOMS LIST FROM DB
+# -------------------------------------------------------------------------------------
+
+def get_atoms_list_from_db(
+    db_ase: object,
+    selection: str = "",
+    **kwargs,
+) -> list:
+    """
+    Get list of ase Atoms from ase database.
+    """
+    atoms_list = []
+    for id in [aa.id for aa in db_ase.select(selection=selection, **kwargs)]:
+        atoms_row = db_ase.get(id=id)
+        atoms = atoms_row.toatoms()
+        atoms.info = atoms_row.data
+        atoms.info.update(atoms_row.key_value_pairs)
+        atoms_list.append(atoms)
+    return atoms_list
 
 # -------------------------------------------------------------------------------------
 # END
