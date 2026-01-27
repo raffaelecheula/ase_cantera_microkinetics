@@ -5,13 +5,118 @@
 import yaml
 import numpy as np
 import cantera as ct
+from ase.db import connect
 
 from ase_cantera_microkinetics import units
-from ase_cantera_microkinetics.cantera_utils import reactions_from_cat_ts
+from ase_cantera_microkinetics.cantera_utilities import reactions_from_cat_ts
 from ase_cantera_microkinetics.reaction_mechanism import (
     get_spec_NasaPoly2,
     get_surf_reactions_from_g0_act_dict_fixed_T,
 )
+
+# -------------------------------------------------------------------------------------
+# GET ATOMS LIST FROM DB
+# -------------------------------------------------------------------------------------
+
+def get_atoms_list_from_db(
+    db_ase: object,
+    selection: str = "",
+    **kwargs,
+) -> list:
+    """
+    Get list of ase Atoms from ase database.
+    """
+    atoms_list = []
+    for id in [aa.id for aa in db_ase.select(selection=selection, **kwargs)]:
+        atoms_row = db_ase.get(id=id)
+        atoms = atoms_row.toatoms()
+        atoms.info = atoms_row.data
+        atoms.info.update(atoms_row.key_value_pairs)
+        atoms_list.append(atoms)
+    return atoms_list
+
+# -------------------------------------------------------------------------------------
+# WRITE ATOMS LIST TO DB
+# -------------------------------------------------------------------------------------
+
+def write_atoms_list_to_db(
+    db_name: str,
+    atoms_list: list,
+    append: bool = False,
+    **kwargs: dict,
+) -> None:
+    """
+    Write atoms list to ASE database.
+    """
+    with connect(db_name, append=append) as db_ase:
+        for atoms in atoms_list:
+            db_ase.write(atoms=atoms, data=atoms.info, **kwargs)
+
+# -------------------------------------------------------------------------------------
+# GET E FORM FROM ASE ATOMS
+# -------------------------------------------------------------------------------------
+
+def get_e_form_from_ase_atoms(
+    atoms_ads_list: list,
+    atoms_ts_list: list,
+    free_site: str,
+    yaml_file: str = None,
+    names_ads_list: list = [],
+    names_ts_list: list = [],
+    e_form_key: str = "E_form",
+    e_index: int = None,
+    species_key: str = "species_cantera",
+    e_form_missing: float = 2.,
+):
+    """
+    Get formation energies from ASE Atoms list.
+    """
+    # Read the reaction mechanism.
+    if yaml_file is not None:
+        with open(yaml_file, "r") as fileobj:
+            mechanism = yaml.safe_load(fileobj)
+        # Get names lists.
+        names_ads_list = [
+            species["name"] for species in mechanism["species-adsorbates"]
+        ]
+        names_ts_list = [
+            species["name"] for species in mechanism["species-reactions"]
+            if not species["thermo"].get("sticking", False)
+        ]
+    # Get formation energies.
+    e_form_dict = {free_site: 0.}
+    for species_name in [name for name in names_ads_list if name != free_site]:
+        atoms_list = [
+            atoms for atoms in atoms_ads_list
+            if atoms.info[species_key] == species_name
+        ]
+        e_form_list = [
+            atoms.info[e_form_key] 
+            if e_index is None else atoms.info[e_form_key][e_index]
+            for atoms in atoms_list
+        ]
+        if len(e_form_list) > 0:
+            e_form_dict[species_name] = np.min(e_form_list)
+        else:
+            print(f"Missing: {species_name}")
+            e_form_dict[species_name] = e_form_missing
+    for species_name in names_ts_list:
+        atoms_list = [
+            atoms for atoms in atoms_ts_list
+            if atoms.info[species_key] == species_name
+        ]
+        e_form_list = [
+            atoms.info[e_form_key] 
+            if e_index is None else atoms.info[e_form_key][e_index]
+            for atoms in atoms_list
+        ]
+        if len(e_form_list) > 0:
+            e_form_dict[species_name] = np.min(e_form_list)
+        else:
+            print(f"Missing: {species_name}")
+            e_form_dict[species_name] = e_form_missing
+    # Return formation energies.
+    return e_form_dict
 
 # -------------------------------------------------------------------------------------
 # GET SPECIES FROM YAML NASA7
@@ -119,89 +224,6 @@ def get_mechanism_from_yaml(
     # Get reactions from transition states.
     reactions_from_cat_ts(gas=gas, cat=cat, cat_ts=cat_ts)
     return gas, cat, cat_ts
-
-# -------------------------------------------------------------------------------------
-# GET E FORM FROM ASE ATOMS
-# -------------------------------------------------------------------------------------
-
-def get_e_form_from_ase_atoms(
-    yaml_file: str,
-    atoms_ads_list: list,
-    atoms_ts_list: list,
-    free_site: str,
-    e_form_key: str = "E_form",
-    e_index: int = None,
-    species_key: str = "species_cantera",
-    e_form_missing: float = 2.,
-):
-    """
-    Get formation energies from ASE Atoms list.
-    """
-    # Read the reaction mechanism.
-    with open(yaml_file, "r") as fileobj:
-        mechanism = yaml.safe_load(fileobj)
-    # Get species lists.
-    adsorbates_list = [
-        species["name"] for species in mechanism["species-adsorbates"]
-    ]
-    reactions_list = [
-        species["name"] for species in mechanism["species-reactions"]
-        if not species["thermo"].get("sticking", False)
-    ]
-    # Get formation energies.
-    e_form_dict = {free_site: 0.}
-    for species_name in [name for name in adsorbates_list if name != free_site]:
-        atoms_list = [
-            atoms for atoms in atoms_ads_list
-            if atoms.info[species_key] == species_name
-        ]
-        e_form_list = [
-            atoms.info[e_form_key] 
-            if e_index is None else atoms.info[e_form_key][e_index]
-            for atoms in atoms_list
-        ]
-        if len(e_form_list) > 0:
-            e_form_dict[species_name] = np.min(e_form_list)
-        else:
-            print(f"Missing: {species_name}")
-            e_form_dict[species_name] = e_form_missing
-    for species_name in reactions_list:
-        atoms_list = [
-            atoms for atoms in atoms_ts_list
-            if atoms.info[species_key] == species_name
-        ]
-        e_form_list = [
-            atoms.info[e_form_key] 
-            if e_index is None else atoms.info[e_form_key][e_index]
-            for atoms in atoms_list
-        ]
-        if len(e_form_list) > 0:
-            e_form_dict[species_name] = np.min(e_form_list)
-        else:
-            print(f"Missing: {species_name}")
-            e_form_dict[species_name] = e_form_missing
-    return e_form_dict
-
-# -------------------------------------------------------------------------------------
-# GET ATOMS LIST FROM DB
-# -------------------------------------------------------------------------------------
-
-def get_atoms_list_from_db(
-    db_ase: object,
-    selection: str = "",
-    **kwargs,
-) -> list:
-    """
-    Get list of ase Atoms from ase database.
-    """
-    atoms_list = []
-    for id in [aa.id for aa in db_ase.select(selection=selection, **kwargs)]:
-        atoms_row = db_ase.get(id=id)
-        atoms = atoms_row.toatoms()
-        atoms.info = atoms_row.data
-        atoms.info.update(atoms_row.key_value_pairs)
-        atoms_list.append(atoms)
-    return atoms_list
 
 # -------------------------------------------------------------------------------------
 # END

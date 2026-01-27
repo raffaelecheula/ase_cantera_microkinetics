@@ -8,7 +8,7 @@ from ase.formula import Formula
 from ase.data import atomic_masses, atomic_numbers
 
 from ase_cantera_microkinetics import units
-from ase_cantera_microkinetics.cantera_utils import modify_enthalpy
+from ase_cantera_microkinetics.cantera_utilities import modify_enthalpy
 
 # -------------------------------------------------------------------------------------
 # NAME ANALYZER
@@ -129,7 +129,7 @@ def get_spec_ConstantCp(
     temperature: float,
     composition: dict = None,
     size: int = None,
-    units_energy: float = units.eV/units.molecule,
+    units_energy: float = units.eV / units.molecule,
     T_low: float = 200.00,
     T_high: float = 2000.00,
     P_ref: float = ct.one_atm,
@@ -166,7 +166,7 @@ def get_spec_NasaPoly2(
     e_form: float = None,
     composition: dict = None,
     size: int = None,
-    units_energy: float = units.eV/units.molecule,
+    units_energy: float = units.eV / units.molecule,
     T_low: float = 200.00,
     T_mid: float = 1000.00,
     T_high: float = 2000.00,
@@ -204,7 +204,7 @@ def get_spec_NasaPoly2(
 def get_species_from_g0_dict_fixed_T(
     g0_dict: dict,
     temperature_fixed: float,
-    units_energy: float = units.eV/units.molecule,
+    units_energy: float = units.eV / units.molecule,
     name_analyzer: object = NameAnalyzer(),
     composition_dict: dict = None,
     size_dict: dict = None,
@@ -247,7 +247,7 @@ def get_species_from_g0_dict_fixed_T(
 def get_species_from_coeffs_NASA_dict(
     coeffs_NASA_dict: dict,
     e_form_dict: dict = None,
-    units_energy: float = units.eV/units.molecule,
+    units_energy: float = units.eV / units.molecule,
     name_analyzer: object = NameAnalyzer(),
     composition_dict: dict = None,
     size_dict: dict = None,
@@ -306,7 +306,7 @@ def get_surf_react_from_e_act(
     name: str,
     e_act: float,
     pre_exp: float,
-    units_energy: float = units.eV/units.molecule,
+    units_energy: float = units.eV / units.molecule,
     allow_negative_e_act: bool = False,
     allow_sticking_e_act: bool = False,
 ):
@@ -369,7 +369,7 @@ def get_surf_reactions_from_g0_act_dict_fixed_T(
     pre_exp_dict: dict = None,
     site_density: float = None,
     sticking_reactions: list = [],
-    units_energy: float = units.eV/units.molecule,
+    units_energy: float = units.eV / units.molecule,
     P_ref: float = ct.one_atm,
 ):
     """
@@ -406,7 +406,7 @@ def get_surf_reactions_from_g0_act_dict_fixed_T(
             name=name,
             e_act=g0_act,
             pre_exp=pre_exp,
-            units_energy=units.eV / units.molecule,
+            units_energy=units_energy,
         )
         surf_reactions.append(react)
     return surf_reactions

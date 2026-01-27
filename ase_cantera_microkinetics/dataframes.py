@@ -7,7 +7,7 @@ import pandas as pd
 import cantera as ct
 
 from ase_cantera_microkinetics import units
-from ase_cantera_microkinetics.cantera_utils import get_std_gibbs_dict
+from ase_cantera_microkinetics.cantera_utilities import get_std_gibbs_dict
 from ase_cantera_microkinetics.reaction_mechanism import (
     NameAnalyzer,
     get_species_from_coeffs_NASA_dict,

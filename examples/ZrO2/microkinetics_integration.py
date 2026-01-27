@@ -6,11 +6,11 @@ import timeit
 import cantera as ct
 import numpy as np
 from ase_cantera_microkinetics import units
-from ase_cantera_microkinetics.cantera_utils import (
+from ase_cantera_microkinetics.cantera_utilities import (
     get_Y_dict,
     advance_sim_to_steady_state,
 )
-from ase_cantera_microkinetics.reaction_mechanism_from_df import (
+from ase_cantera_microkinetics.dataframes import (
     get_gas_species_from_df_coeffs_NASA,
     get_ads_species_from_df_fixed_T, 
     get_ts_species_from_df_fixed_T, 
