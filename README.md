@@ -21,7 +21,7 @@ pip install -e .
 
 ## Usage
 
-An example of how to use **ase_cantera_microkinetics** is in `ase_cantera_microkinetics\examples\microkinetics_integration.py`
+Examples of how to use **ase_cantera_microkinetics** are in `ase_cantera_microkinetics\examples`
 
 ## Requirements
 

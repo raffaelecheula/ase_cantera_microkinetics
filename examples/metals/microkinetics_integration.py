@@ -30,45 +30,62 @@ def main():
     # Parameters.
     ensemble = True
     calculate_DRC = True
-    e_form_zero_yaml = "e_form_zero.yaml"
-    deltae_form_yaml = "deltae_form.yaml"
+    deltae_TS_from_ads = True
+    use_coeffs_BEP = False
+    surface_name = "Rh100"
+    e_form_zero_yaml = f"e_form_zero_{surface_name}.yaml"
+    deltae_form_yaml = f"deltae_form_{surface_name}.yaml"
     mechanism_yaml = "mechanism.yaml"
-    results_yaml = "results.yaml" if ensemble else None
-    verbose = False
-    n_calculations = 2000
-    index_list = list(range(n_calculations)) if ensemble else [0]
+    coeffs_BEP_yaml = "coeffs_BEP.yaml"
+    results_yaml = f"results_{surface_name}.yaml"
     
     # Read input yaml files.
     with open(e_form_zero_yaml, "r") as fileobj:
         e_form_dict_zero = yaml.safe_load(fileobj)
     with open(deltae_form_yaml, "r") as fileobj:
         deltae_dict = yaml.safe_load(fileobj)
+        # Number of delta energies in the ensemble.
+        index_list = list(range(len(deltae_dict["(Rh)"])))
     # Run calculations.
-    results_list = []
-    for index in index_list if verbose else tqdm(index_list, ncols=100):
-        # Get formation energies.
-        if ensemble is True:
+    if ensemble is True:
+        # Calculate delta energies of transition states from adsorbates.
+        if deltae_TS_from_ads is True:
+            deltae_dict = update_deltae_ts(
+                deltae_dict=deltae_dict,
+                use_coeffs_BEP=use_coeffs_BEP,
+                coeffs_BEP_yaml=coeffs_BEP_yaml,
+            )
+        # Run calculations.
+        results_list = []
+        for index in tqdm(index_list, ncols=100):
+            # Update formation energies with ensemble delta energies.
             e_form_dict = {
                 name: e_form_dict_zero[name] + deltae_dict[name][index]
                 for name in e_form_dict_zero
             }
-        else:
-            e_form_dict = e_form_dict_zero.copy()
-        # Integrate the microkinetic model.
-        results = integrate_microkinetic_model(
-            e_form_dict=e_form_dict,
-            mechanism_yaml=mechanism_yaml,
-            calculate_DRC=calculate_DRC,
-            verbose=verbose,
-        )
-        results_list.append(results)
-    # Save results to yaml.
-    if ensemble is True:
+            # Integrate the microkinetic model.
+            results = integrate_microkinetic_model(
+                e_form_dict=e_form_dict,
+                mechanism_yaml=mechanism_yaml,
+                calculate_DRC=calculate_DRC,
+                verbose=False,
+            )
+            results_list.append(results)
+        # Save results to yaml.
         results_all = {
             key: [results[key] for results in results_list]
             for key in results_list[0].keys()
         }
         save_results_to_yaml(results=results_all, results_yaml=results_yaml)
+    else:
+        # Integrate the microkinetic model with original formation energies.
+        integrate_microkinetic_model(
+            e_form_dict=e_form_dict_zero,
+            mechanism_yaml=mechanism_yaml,
+            calculate_DRC=calculate_DRC,
+            verbose=True,
+        )
+
 
 # -------------------------------------------------------------------------------------
 # INTEGRATE MICROKINETIC MODEL
@@ -76,8 +93,8 @@ def main():
 
 def integrate_microkinetic_model(
     e_form_dict: dict,
-    mechanism_yaml: str,
-    calculate_DRC: bool = False,
+    mechanism_yaml: str = "mechanism.yaml",
+    calculate_DRC: bool = True,
     elements_molar_balance: bool = False,
     verbose: bool = True,
 ) -> dict:
@@ -102,7 +119,7 @@ def integrate_microkinetic_model(
     gas_reac = "CO2"
     gas_prod = "CO"
     mol_weight_prod = 28 # [kg/kmol]
-    # Set number of cstr for the discretization of the PFR.
+    # Set number of CSTR for the discretization of the PFR.
     n_cstr = 1
     # Set the catalyst and reactor parameters.
     alpha_cat = 20000.0 # [m^2/m^3]
@@ -178,7 +195,7 @@ def integrate_microkinetic_model(
             string += ("x_"+spec+"[-]").rjust(12)
         print(string)
     # Integrate the reactor.
-    for ii in range(n_cstr+1):
+    for ii in range(n_cstr + 1):
         z_reactor = ii * cstr_length
         gas_array.append(state=gas.state, z_reactor=z_reactor)
         cat_array.append(state=cat.state, z_reactor=z_reactor)
@@ -188,7 +205,7 @@ def integrate_microkinetic_model(
             string += f"  {gas[spec].X[0]:10f}"
         if verbose is True:
             print(string)
-        # Intergate the microkinetic model.
+        # Integrate the microkinetic model.
         if ii < n_cstr:
             advance_sim_to_steady_state(sim=sim, n_try_max=1000)
         # Set the gas composition of the inlet of the next cstr equal to the 
@@ -284,6 +301,42 @@ def save_results_to_yaml(
             sort_keys=False,
             Dumper=CustomDumper,
         )
+
+# -------------------------------------------------------------------------------------
+# UPDATE DELTAE TS
+# -------------------------------------------------------------------------------------
+
+def update_deltae_ts(
+    deltae_dict: dict,
+    use_coeffs_BEP: bool = True,
+    coeffs_BEP_yaml: str = "coeffs_BEP.yaml",
+) -> dict:
+    """
+    Update the delta energies of transition states from adsorbates.
+    """
+    from ase_cantera_microkinetics.reaction_mechanism import NameAnalyzer
+    # Load BEP relations coefficients.
+    if use_coeffs_BEP is True:
+        with open(coeffs_BEP_yaml, "r") as fileobj:
+            coeffs_BEP = yaml.safe_load(fileobj)
+    # Get transition state names.
+    name_analyzer = NameAnalyzer()
+    for species in [species for species in deltae_dict if "<=>" in species]:
+        # Get reactants and products.
+        reactants = name_analyzer.get_reactants(species)
+        products = name_analyzer.get_products(species)
+        # Read BEP coefficient.
+        coeff = coeffs_BEP.get(species, 0.5) if use_coeffs_BEP is True else 0.5
+        # Calculate delta energy of the transition state.
+        deltae_list = []
+        for ii in range(len(deltae_dict[species])):
+            deltae_reactants = np.sum([deltae_dict[spec][ii] for spec in reactants])
+            deltae_products = np.sum([deltae_dict[spec][ii] for spec in products])
+            deltae = coeff * deltae_products + (1 - coeff) * deltae_reactants
+            deltae_list.append(deltae)
+        deltae_dict[species] = np.array(deltae_list)
+    # Return updated dictionary.
+    return deltae_dict
 
 # -------------------------------------------------------------------------------------
 # IF NAME MAIN

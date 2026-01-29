@@ -1,0 +1,5 @@
+CO2(Rh,Rh) <=> CO(Rh) + O(Rh): 0.798
+H2O(Rh) + (Rh) <=> OH(Rh) + H(Rh): 0.544
+OH(Rh) + (Rh) <=> O(Rh) + H(Rh): 0.644
+COOH(Rh,Rh) <=> CO(Rh) + OH(Rh): 0.550
+COOH(Rh,Rh) + (Rh) <=> CO2(Rh,Rh) + H(Rh): 0.085
